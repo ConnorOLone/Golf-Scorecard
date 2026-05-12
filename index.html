@@ -208,6 +208,23 @@
   }
   .panel-buttons button:active { background: #f2f2f7; }
   .panel-buttons button.danger { color: #d23f3f; }
+  .storage-status {
+    font-size: 12px;
+    color: #6b6b70;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .storage-status .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: #c7c7cc;
+  }
+  .storage-status .dot.ok { background: #0f6e56; }
+  .storage-status .dot.warn { background: #c47200; }
 
   .par-grid {
     display: grid;
@@ -452,6 +469,7 @@
     .modal input.modal-input, .modal select.modal-input { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
     .modal-actions button { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.1); }
     .modal-actions button:active { background: #3a3a3c; }
+    .storage-status { color: #8e8e93; }
     .hole-grid .cell { background: #2c2c2e; }
     .hole-grid .cell.score-under { background: #1d3d2e; color: #6dcfa0; }
     .hole-grid .cell.score-over  { background: #3d1d1d; color: #ff9080; }
@@ -514,6 +532,18 @@
       </div>
     </div>
   </details>
+
+  <details class="panel" id="dataPanel">
+    <summary><span>Backup</span></summary>
+    <div class="panel-body">
+      <div class="storage-status" id="storageStatus">Checking storage…</div>
+      <div class="panel-buttons">
+        <button id="exportBackup">Export</button>
+        <button id="importBackup">Import</button>
+      </div>
+    </div>
+  </details>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
 
   <div class="holes" id="holes"></div>
 
@@ -1166,6 +1196,104 @@
     renderHistory();
     historyViewEl.style.display = 'block';
   });
+
+  // --- Backup: export / import ---
+  const BACKUP_VERSION = 1;
+  const BACKUP_APP = 'golf-scorecard';
+
+  function buildBackup() {
+    return {
+      app: BACKUP_APP,
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      courses: JSON.parse(localStorage.getItem(COURSES_KEY) || 'null'),
+      round:   JSON.parse(localStorage.getItem(ROUND_KEY) || 'null'),
+      history: JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+    };
+  }
+
+  function downloadBackup() {
+    const data = buildBackup();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = isoLocal(Date.now());
+    a.href = url;
+    a.download = `golf-scorecard-backup-${today}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function isValidBackup(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    if (obj.app !== BACKUP_APP) return false;
+    if (!obj.courses || !Array.isArray(obj.courses.courses)) return false;
+    if (!Array.isArray(obj.history)) return false;
+    return true;
+  }
+
+  async function importBackupFromFile(file) {
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (e) {
+      await alertDialog('Could not read that file — it is not valid JSON.');
+      return;
+    }
+    if (!isValidBackup(parsed)) {
+      await alertDialog('That file does not look like a Golf Scorecard backup.');
+      return;
+    }
+    const historyCount = parsed.history.length;
+    const courseCount = parsed.courses.courses.length;
+    const ok = await confirmDialog(
+      `Replace all current data with backup from ${new Date(parsed.exportedAt || Date.now()).toLocaleDateString()}? This will overwrite ${courses.length} course(s) and ${loadHistory().length} saved round(s) with ${courseCount} course(s) and ${historyCount} saved round(s).`,
+      { title: 'Restore backup', okText: 'Replace', destructive: true }
+    );
+    if (!ok) return;
+
+    localStorage.setItem(COURSES_KEY, JSON.stringify(parsed.courses));
+    if (parsed.round) localStorage.setItem(ROUND_KEY, JSON.stringify(parsed.round));
+    else localStorage.removeItem(ROUND_KEY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(parsed.history));
+    location.reload();
+  }
+
+  document.getElementById('exportBackup').addEventListener('click', downloadBackup);
+
+  const importFileEl = document.getElementById('importFile');
+  document.getElementById('importBackup').addEventListener('click', () => importFileEl.click());
+  importFileEl.addEventListener('change', async () => {
+    const f = importFileEl.files && importFileEl.files[0];
+    importFileEl.value = '';
+    if (f) await importBackupFromFile(f);
+  });
+
+  // --- Persistent storage ---
+  const storageStatusEl = document.getElementById('storageStatus');
+  async function refreshStorageStatus() {
+    if (!navigator.storage || !navigator.storage.persisted) {
+      storageStatusEl.innerHTML = '<span class="dot warn"></span>Persistent storage not supported in this browser.';
+      return;
+    }
+    const persisted = await navigator.storage.persisted();
+    if (persisted) {
+      storageStatusEl.innerHTML = '<span class="dot ok"></span>Storage is persistent — data survives storage pressure.';
+    } else {
+      storageStatusEl.innerHTML = '<span class="dot warn"></span>Storage may be evicted under pressure. Add to home screen to improve durability.';
+    }
+  }
+  async function requestPersistOnce() {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    try {
+      const already = await navigator.storage.persisted();
+      if (!already) await navigator.storage.persist();
+    } catch (e) {}
+    refreshStorageStatus();
+  }
+  requestPersistOnce();
 
   render();
 
