@@ -12,6 +12,7 @@
 <title>Scorecard</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button, summary, .hole, .score, .stepper button { touch-action: manipulation; }
   html, body {
     margin: 0;
     padding: 0;
@@ -74,32 +75,40 @@
     pointer-events: none;
   }
   .summary {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
     background: #0f6e56;
     color: white;
     border-radius: 16px;
-    padding: 16px;
+    padding: 20px 16px 16px;
     margin-bottom: 16px;
+    text-align: center;
+    position: relative;
   }
-  .summary-item { text-align: center; }
-  .summary-label {
+  .summary-hero { line-height: 1; }
+  .summary-hero-value {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+  .summary-hero-value.danger { color: #ffb4a8; }
+  .summary-hero-value.info { color: #a8e6cf; }
+  .summary-hero-label {
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     opacity: 0.75;
-    margin-bottom: 4px;
+    margin-top: 6px;
   }
-  .summary-value {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
+  .summary-sub {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 14px;
+    font-size: 13px;
   }
-  .summary-value.danger { color: #ffb4a8; }
-  .summary-value.info { color: #a8e6cf; }
+  .summary-sub span { opacity: 0.85; }
+  .summary-sub b { font-weight: 600; opacity: 1; }
   .splits {
-    grid-column: 1 / -1;
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -265,6 +274,29 @@
     border-radius: 12px;
     padding: 10px 12px;
     border: 0.5px solid rgba(0,0,0,0.08);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .hole.next {
+    border-color: #0f6e56;
+    box-shadow: 0 0 0 2px rgba(15, 110, 86, 0.15);
+  }
+  .nine-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 6px 2px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #8e8e93;
+    font-weight: 600;
+  }
+  .nine-divider::before,
+  .nine-divider::after {
+    content: "";
+    flex: 1;
+    height: 0.5px;
+    background: rgba(0,0,0,0.08);
   }
   .hole-num {
     font-size: 16px;
@@ -307,8 +339,20 @@
     font-weight: 600;
     min-width: 32px;
     letter-spacing: -0.5px;
+    padding: 4px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
   }
+  .stepper .score:active { background: rgba(0,0,0,0.04); }
   .score.empty { color: #c7c7cc; font-weight: 400; }
+  .score.bump { animation: scoreBump 0.28s ease-out; }
+  @keyframes scoreBump {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
   .label {
     font-size: 11px;
     text-align: right;
@@ -336,9 +380,42 @@
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .btn:active { background: #f2f2f7; }
   .btn.danger { color: #d23f3f; }
+  .btn.primary {
+    background: #0f6e56;
+    color: white;
+    border-color: transparent;
+  }
+  .btn.primary:active { background: #0c5a47; }
+  .btn.success {
+    background: #d4f0e3;
+    color: #0f6e56;
+    border-color: transparent;
+  }
+  .btn.active {
+    background: #1c1c1e;
+    color: white;
+    border-color: transparent;
+  }
+  .actions-secondary {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  .reset-link {
+    background: none;
+    border: none;
+    color: #8e8e93;
+    font-size: 13px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 8px;
+  }
+  .reset-link:active { color: #d23f3f; background: rgba(210, 63, 63, 0.08); }
 
   /* Stats */
   .stats-block {
@@ -480,6 +557,11 @@
     width: 100%;
     max-width: 320px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
   }
   .modal-title {
     font-size: 16px;
@@ -533,6 +615,42 @@
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+  /* Score keypad */
+  .score-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .score-keypad button {
+    height: 52px;
+    border-radius: 12px;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    background: #f5f5f7;
+    color: #1c1c1e;
+    font-size: 22px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.05s, transform 0.05s;
+  }
+  .score-keypad button:active {
+    background: #d1d1d6;
+    transform: scale(0.96);
+  }
+  .score-keypad button.par {
+    background: #d4f0e3;
+    color: #0f6e56;
+    border-color: transparent;
+  }
+  .score-keypad-meta {
+    font-size: 12px;
+    color: #8e8e93;
+    text-align: center;
+    margin-bottom: 12px;
+    margin-top: -4px;
+  }
+
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
     .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
@@ -561,6 +679,16 @@
     .hole-grid .cell.score-bogey { background: #3a2d10; color: #e0a050; }
     .history-detail { border-top-color: rgba(255,255,255,0.08); }
     .splits { border-top-color: rgba(255,255,255,0.18); }
+    .hole.next { border-color: #4dbf9e; box-shadow: 0 0 0 2px rgba(77, 191, 158, 0.18); }
+    .nine-divider { color: #8e8e93; }
+    .nine-divider::before, .nine-divider::after { background: rgba(255,255,255,0.1); }
+    .score-keypad button { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.08); }
+    .score-keypad button:active { background: #3a3a3c; }
+    .score-keypad button.par { background: #1d3d2e; color: #6dcfa0; }
+    .btn.success { background: #1d3d2e; color: #6dcfa0; }
+    .btn.active { background: #f5f5f7; color: #1c1c1e; }
+    .reset-link { color: #8e8e93; }
+    .reset-link:active { color: #ff9080; background: rgba(255, 144, 128, 0.1); }
   }
 </style>
 </head>
@@ -576,17 +704,13 @@
   </header>
 
   <div class="summary">
-    <div class="summary-item">
-      <div class="summary-label">Total</div>
-      <div class="summary-value" id="total">0</div>
+    <div class="summary-hero">
+      <div class="summary-hero-value" id="toPar">E</div>
+      <div class="summary-hero-label">to par</div>
     </div>
-    <div class="summary-item">
-      <div class="summary-label">To par</div>
-      <div class="summary-value" id="toPar">E</div>
-    </div>
-    <div class="summary-item">
-      <div class="summary-label">Thru</div>
-      <div class="summary-value" id="thru">0</div>
+    <div class="summary-sub">
+      <span>Total <b id="total">0</b></span>
+      <span>Thru <b id="thru">0</b></span>
     </div>
     <div class="splits" id="splits" hidden></div>
   </div>
@@ -633,12 +757,26 @@
   <div class="holes" id="holes"></div>
 
   <div class="actions">
-    <button class="btn" id="save">Save round</button>
+    <button class="btn primary" id="save">Save round</button>
     <button class="btn" id="history">History</button>
-    <button class="btn danger" id="reset">Reset</button>
+  </div>
+  <div class="actions-secondary">
+    <button class="reset-link" id="reset">Reset round</button>
   </div>
 
   <div id="historyView" style="display:none; margin-top: 16px;"></div>
+</div>
+
+<div class="modal-backdrop" id="scoreModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="scoreModalTitle"></div>
+    <div class="score-keypad-meta" id="scoreModalMeta"></div>
+    <div class="score-keypad" id="scoreKeypad"></div>
+    <div class="modal-actions">
+      <button id="scoreClear" class="danger">Clear hole</button>
+      <button id="scoreCancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="modal" hidden>
@@ -836,7 +974,8 @@
 
   function renderHeader() {
     const c = currentCourse();
-    courseNameEl.textContent = c.name;
+    const parSum = c.pars.reduce((a, b) => a + b, 0);
+    courseNameEl.textContent = `${c.name} · Par ${parSum}`;
     const d = new Date(round.date);
     dateBtn.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
@@ -901,16 +1040,30 @@
     }
   }
 
+  function nextUnfilledIndex() {
+    return round.scores.findIndex(s => s == null);
+  }
+
   function renderHoles() {
     const c = currentCourse();
     holesEl.innerHTML = '';
+    const nextIdx = nextUnfilledIndex();
+
     for (let i = 0; i < c.holes; i++) {
+      if (c.holes === 18 && i === 9) {
+        const div = document.createElement('div');
+        div.className = 'nine-divider';
+        div.innerHTML = '<span>Back 9</span>';
+        holesEl.appendChild(div);
+      }
+
       const par = c.pars[i];
       const score = round.scores[i];
       const lbl = labelFor(score, par);
 
       const row = document.createElement('div');
-      row.className = 'hole';
+      row.className = 'hole' + (i === nextIdx ? ' next' : '');
+      row.dataset.holeRow = i;
       row.innerHTML = `
         <div>
           <div class="hole-num">${i + 1}</div>
@@ -918,12 +1071,54 @@
         </div>
         <div class="stepper">
           <button data-hole="${i}" data-action="dec" aria-label="Decrease score">−</button>
-          <div class="score ${score == null ? 'empty' : ''}">${score == null ? '–' : score}</div>
+          <div class="score ${score == null ? 'empty' : ''}" data-score-hole="${i}" role="button" aria-label="Set score for hole ${i + 1}">${score == null ? '–' : score}</div>
           <button data-hole="${i}" data-action="inc" aria-label="Increase score">+</button>
         </div>
         <div class="label ${lbl.cls}">${lbl.text}</div>
       `;
       holesEl.appendChild(row);
+    }
+  }
+
+  function updateHoleRow(i, opts = {}) {
+    const c = currentCourse();
+    const par = c.pars[i];
+    const score = round.scores[i];
+    const lbl = labelFor(score, par);
+    const row = holesEl.querySelector(`.hole[data-hole-row="${i}"]`);
+    if (!row) return;
+
+    const scoreEl = row.querySelector('.score');
+    scoreEl.textContent = score == null ? '–' : score;
+    scoreEl.classList.toggle('empty', score == null);
+
+    const labelEl = row.querySelector('.label');
+    labelEl.className = 'label ' + lbl.cls;
+    labelEl.textContent = lbl.text;
+
+    if (opts.bump) {
+      scoreEl.classList.remove('bump');
+      // force reflow so the animation restarts
+      void scoreEl.offsetWidth;
+      scoreEl.classList.add('bump');
+    }
+
+    // Refresh `.next` ring across all rows.
+    const nextIdx = nextUnfilledIndex();
+    holesEl.querySelectorAll('.hole').forEach(r => {
+      r.classList.toggle('next', parseInt(r.dataset.holeRow, 10) === nextIdx);
+    });
+  }
+
+  function scrollToNextHole({ smooth = true } = {}) {
+    const nextIdx = nextUnfilledIndex();
+    if (nextIdx < 0) return;
+    const row = holesEl.querySelector(`.hole[data-hole-row="${nextIdx}"]`);
+    if (!row) return;
+    const rect = row.getBoundingClientRect();
+    const vh = window.innerHeight;
+    if (rect.top < 80 || rect.bottom > vh - 80) {
+      row.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
     }
   }
 
@@ -952,7 +1147,7 @@
     const diff = total - parTotal;
 
     document.getElementById('total').textContent = total;
-    document.getElementById('thru').textContent = played.length;
+    document.getElementById('thru').textContent = `${played.length}/${c.holes}`;
     const toParEl = document.getElementById('toPar');
     toParEl.classList.remove('danger', 'info');
     if (played.length === 0 || diff === 0) {
@@ -991,7 +1186,34 @@
     }[ch]));
   }
 
-  // --- Score stepper ---
+  // --- Saved-state tracking ---
+  let roundSaved = false;
+  const saveBtn = document.getElementById('save');
+  function markRoundDirty() {
+    if (roundSaved) {
+      roundSaved = false;
+      saveBtn.classList.remove('success');
+      saveBtn.classList.add('primary');
+      saveBtn.textContent = 'Save round';
+    }
+  }
+  function markRoundSaved() {
+    roundSaved = true;
+    saveBtn.classList.remove('primary');
+    saveBtn.classList.add('success');
+    saveBtn.textContent = '✓ Saved';
+  }
+
+  function onScoreChanged(i) {
+    saveRound();
+    updateHoleRow(i, { bump: true });
+    updateSummary();
+    markRoundDirty();
+    scrollToNextHole();
+    if (navigator.vibrate) navigator.vibrate(5);
+  }
+
+  // --- Score stepper (+ / −) ---
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-hole]');
     if (!btn) return;
@@ -1000,16 +1222,134 @@
     const c = currentCourse();
     const current = round.scores[i];
     if (action === 'inc') {
-      round.scores[i] = current == null ? c.pars[i] : Math.min(current + 1, 15);
+      round.scores[i] = current == null ? c.pars[i] : Math.min(current + 1, 25);
     } else {
       if (current == null) return;
       round.scores[i] = current - 1;
       if (round.scores[i] < 1) round.scores[i] = null;
     }
-    saveRound();
-    renderHoles();
-    updateSummary();
-    if (navigator.vibrate) navigator.vibrate(5);
+    onScoreChanged(i);
+  });
+
+  // --- Direct score entry (tap the number) ---
+  const scoreModalEl   = document.getElementById('scoreModal');
+  const scoreModalTitle = document.getElementById('scoreModalTitle');
+  const scoreModalMeta  = document.getElementById('scoreModalMeta');
+  const scoreKeypadEl   = document.getElementById('scoreKeypad');
+  const scoreClearBtn   = document.getElementById('scoreClear');
+  const scoreCancelBtn  = document.getElementById('scoreCancel');
+
+  function openScoreKeypad(i) {
+    const c = currentCourse();
+    const par = c.pars[i];
+    const current = round.scores[i];
+    scoreModalTitle.textContent = `Hole ${i + 1}`;
+    scoreModalMeta.textContent = `Par ${par}${current != null ? ` · currently ${current}` : ''}`;
+
+    const max = 12;
+    scoreKeypadEl.innerHTML = '';
+    for (let n = 1; n <= max; n++) {
+      const b = document.createElement('button');
+      b.textContent = n;
+      b.dataset.score = n;
+      if (n === par) b.classList.add('par');
+      scoreKeypadEl.appendChild(b);
+    }
+
+    const cleanup = () => {
+      scoreModalEl.hidden = true;
+      scoreKeypadEl.onclick = null;
+      scoreClearBtn.onclick = null;
+      scoreCancelBtn.onclick = null;
+      scoreModalEl.onclick = null;
+      document.removeEventListener('keydown', onKey);
+    };
+    const choose = (val) => {
+      round.scores[i] = val;
+      cleanup();
+      onScoreChanged(i);
+    };
+    const cancel = () => cleanup();
+    const onKey = (e) => {
+      if (e.key === 'Escape') cancel();
+      else if (/^\d$/.test(e.key)) {
+        // Build multi-digit input via simple buffer.
+        const v = parseInt(e.key, 10);
+        if (v >= 1) choose(v);
+      }
+    };
+
+    scoreKeypadEl.onclick = (e) => {
+      const b = e.target.closest('button[data-score]');
+      if (!b) return;
+      choose(parseInt(b.dataset.score, 10));
+    };
+    scoreClearBtn.onclick = () => {
+      round.scores[i] = null;
+      cleanup();
+      onScoreChanged(i);
+    };
+    scoreCancelBtn.onclick = cancel;
+    scoreModalEl.onclick = (e) => { if (e.target === scoreModalEl) cancel(); };
+    document.addEventListener('keydown', onKey);
+
+    scoreModalEl.hidden = false;
+  }
+
+  // --- Long-press a hole / tap the score number ---
+  // Single handler so tapping the score opens the keypad and holding it (or
+  // any non-button area of the row) clears the hole.
+  let lpHole = null;
+  let lpTimer = null;
+  let lpFired = false;
+  let lpStartX = 0, lpStartY = 0;
+  const LP_DURATION = 550;
+  const LP_MOVE_TOLERANCE = 10;
+
+  function lpStart(holeIdx, x, y) {
+    lpCancel();
+    lpHole = holeIdx;
+    lpFired = false;
+    lpStartX = x; lpStartY = y;
+    lpTimer = setTimeout(() => {
+      lpTimer = null;
+      if (lpHole == null) return;
+      const i = lpHole;
+      if (round.scores[i] != null) {
+        round.scores[i] = null;
+        lpFired = true; // suppress the subsequent click
+        onScoreChanged(i);
+        if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+      }
+    }, LP_DURATION);
+  }
+  function lpCancel() {
+    if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+    lpHole = null;
+  }
+
+  holesEl.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button[data-hole]')) return;
+    const row = e.target.closest('.hole[data-hole-row]');
+    if (!row) return;
+    lpStart(parseInt(row.dataset.holeRow, 10), e.clientX, e.clientY);
+  });
+  holesEl.addEventListener('pointermove', (e) => {
+    if (lpTimer && (Math.abs(e.clientX - lpStartX) > LP_MOVE_TOLERANCE || Math.abs(e.clientY - lpStartY) > LP_MOVE_TOLERANCE)) {
+      lpCancel();
+    }
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    holesEl.addEventListener(ev, lpCancel)
+  );
+
+  // Tap the score number → open keypad (suppressed if long-press fired).
+  holesEl.addEventListener('click', (e) => {
+    const s = e.target.closest('[data-score-hole]');
+    if (!s) return;
+    if (e.target.closest('button[data-hole]')) return;
+    if (lpFired) { lpFired = false; return; }
+    openScoreKeypad(parseInt(s.dataset.scoreHole, 10));
   });
 
   // --- Par select ---
@@ -1019,6 +1359,7 @@
     const i = parseInt(sel.dataset.parHole, 10);
     currentCourse().pars[i] = parseInt(sel.value, 10);
     saveCourses();
+    renderHeader();
     renderHoles();
     updateSummary();
   });
@@ -1036,6 +1377,7 @@
     saveCourses();
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1074,6 +1416,7 @@
     saveCourses();
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1095,6 +1438,7 @@
     saveCourses();
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1106,6 +1450,7 @@
     saveCourses();
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1119,6 +1464,7 @@
     saveCourses();
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1128,6 +1474,7 @@
     if (!ok) return;
     round = newRound(currentId);
     saveRound();
+    markRoundDirty();
     render();
   });
 
@@ -1159,10 +1506,12 @@
     const h = loadHistory();
     h.unshift(entry);
     saveHistory(h);
+    markRoundSaved();
     const startNew = await confirmDialog('Round saved. Start a new round?', { okText: 'New round' });
     if (startNew) {
       round = newRound(currentId);
       saveRound();
+      markRoundDirty();
       render();
     }
   });
@@ -1377,13 +1726,18 @@
     });
   }
 
-  document.getElementById('history').addEventListener('click', () => {
+  const historyBtn = document.getElementById('history');
+  historyBtn.addEventListener('click', () => {
     if (historyViewEl.style.display === 'block') {
       historyViewEl.style.display = 'none';
+      historyBtn.classList.remove('active');
+      historyBtn.textContent = 'History';
       return;
     }
     renderHistory();
     historyViewEl.style.display = 'block';
+    historyBtn.classList.add('active');
+    historyBtn.textContent = 'Hide history';
   });
 
   // --- Backup: export / import ---
