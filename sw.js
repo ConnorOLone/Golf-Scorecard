@@ -1,4 +1,4 @@
-const CACHE = 'scorecard-v2';
+const CACHE = 'scorecard-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -12,12 +12,33 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function isHTMLRequest(req) {
+  if (req.mode === 'navigate') return true;
+  const accept = req.headers.get('accept') || '';
+  return accept.includes('text/html');
+}
+
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  if (isHTMLRequest(req)) {
+    // Network-first: always try fresh HTML so users get updates.
+    e.respondWith(
+      fetch(req).then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return resp;
+      }).catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-first for static assets.
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request).then((resp) => {
+    caches.match(req).then((cached) => cached || fetch(req).then((resp) => {
       const copy = resp.clone();
-      caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+      caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
       return resp;
     }).catch(() => cached))
   );

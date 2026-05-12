@@ -54,6 +54,25 @@
     color: #1c1c1e;
     font-weight: 500;
   }
+  .date-btn {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    padding: 2px 0;
+    cursor: pointer;
+    text-align: right;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  #dateInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
   .summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -79,6 +98,20 @@
   }
   .summary-value.danger { color: #ffb4a8; }
   .summary-value.info { color: #a8e6cf; }
+  .splits {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 0.5px solid rgba(255,255,255,0.18);
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .splits span { white-space: nowrap; }
+  .splits b { font-weight: 600; }
+  .splits .diff { opacity: 0.7; margin-left: 4px; }
 
   details.panel {
     background: white;
@@ -290,6 +323,117 @@
   .btn:active { background: #f2f2f7; }
   .btn.danger { color: #d23f3f; }
 
+  /* History expand */
+  .history-row { cursor: pointer; }
+  .history-detail {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .history-detail-section {
+    margin-bottom: 8px;
+  }
+  .history-detail-title {
+    font-size: 11px;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .hole-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .hole-grid .cell {
+    padding: 4px 2px;
+    border-radius: 4px;
+    background: #f5f5f7;
+  }
+  .hole-grid .cell.header { color: #8e8e93; background: transparent; font-size: 10px; }
+  .hole-grid .cell.score-under { background: #d4f0e3; color: #0f6e56; font-weight: 600; }
+  .hole-grid .cell.score-over  { background: #fde0db; color: #d23f3f; font-weight: 600; }
+  .hole-grid .cell.score-bogey { background: #fdebd0; color: #c47200; font-weight: 600; }
+  .hole-grid .cell.empty { color: #c7c7cc; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    animation: fadeIn 0.15s ease-out;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .modal-title:empty { display: none; }
+  .modal-message {
+    font-size: 14px;
+    color: #3a3a3c;
+    line-height: 1.4;
+    margin-bottom: 14px;
+  }
+  .modal-message:empty { display: none; }
+  .modal input.modal-input, .modal select.modal-input {
+    width: 100%;
+    height: 40px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    background: #f5f5f7;
+    color: inherit;
+    font-family: inherit;
+    font-size: 15px;
+    padding: 0 12px;
+    margin-bottom: 14px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .modal-actions button {
+    flex: 1;
+    height: 40px;
+    border-radius: 10px;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    background: white;
+    color: #1c1c1e;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-actions button:active { background: #f2f2f7; }
+  .modal-actions button.primary {
+    background: #0f6e56;
+    color: white;
+    border-color: transparent;
+  }
+  .modal-actions button.primary.danger {
+    background: #d23f3f;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
     .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
@@ -303,6 +447,17 @@
     .header-meta { color: #8e8e93; }
     .header-meta .course-name { color: #f5f5f7; }
     .score.empty { color: #48484a; }
+    .modal { background: #1c1c1e; }
+    .modal-message { color: #c7c7cc; }
+    .modal input.modal-input, .modal select.modal-input { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
+    .modal-actions button { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.1); }
+    .modal-actions button:active { background: #3a3a3c; }
+    .hole-grid .cell { background: #2c2c2e; }
+    .hole-grid .cell.score-under { background: #1d3d2e; color: #6dcfa0; }
+    .hole-grid .cell.score-over  { background: #3d1d1d; color: #ff9080; }
+    .hole-grid .cell.score-bogey { background: #3a2d10; color: #e0a050; }
+    .history-detail { border-top-color: rgba(255,255,255,0.08); }
+    .splits { border-top-color: rgba(255,255,255,0.18); }
   }
 </style>
 </head>
@@ -312,7 +467,8 @@
     <h1>Scorecard</h1>
     <div class="header-meta">
       <div class="course-name" id="courseName">—</div>
-      <div id="date"></div>
+      <button class="date-btn" id="dateBtn" aria-label="Change round date"></button>
+      <input type="date" id="dateInput" aria-hidden="true" tabindex="-1">
     </div>
   </header>
 
@@ -329,6 +485,7 @@
       <div class="summary-label">Thru</div>
       <div class="summary-value" id="thru">0</div>
     </div>
+    <div class="splits" id="splits" hidden></div>
   </div>
 
   <details class="panel" id="coursePanel">
@@ -367,6 +524,19 @@
   </div>
 
   <div id="historyView" style="display:none; margin-top: 16px;"></div>
+</div>
+
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-message" id="modalMessage"></div>
+    <input type="text" class="modal-input" id="modalTextInput" hidden>
+    <select class="modal-input" id="modalSelectInput" hidden></select>
+    <div class="modal-actions">
+      <button id="modalCancel">Cancel</button>
+      <button id="modalOk" class="primary">OK</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -464,7 +634,77 @@
   const courseNameIn  = document.getElementById('courseNameInput');
   const holesToggle   = document.getElementById('holesToggle');
   const courseNameEl  = document.getElementById('courseName');
-  const dateEl        = document.getElementById('date');
+  const dateBtn       = document.getElementById('dateBtn');
+  const dateInput     = document.getElementById('dateInput');
+  const splitsEl      = document.getElementById('splits');
+
+  // --- Modal dialogs (replace native confirm/prompt) ---
+  const modalEl       = document.getElementById('modal');
+  const modalTitle    = document.getElementById('modalTitle');
+  const modalMessage  = document.getElementById('modalMessage');
+  const modalTextIn   = document.getElementById('modalTextInput');
+  const modalSelectIn = document.getElementById('modalSelectInput');
+  const modalOk       = document.getElementById('modalOk');
+  const modalCancel   = document.getElementById('modalCancel');
+
+  function showModal(opts) {
+    return new Promise((resolve) => {
+      modalTitle.textContent = opts.title || '';
+      modalMessage.textContent = opts.message || '';
+      modalTextIn.hidden = !opts.text;
+      modalSelectIn.hidden = !opts.select;
+
+      if (opts.text) {
+        modalTextIn.value = opts.text.value ?? '';
+        modalTextIn.placeholder = opts.text.placeholder || '';
+      }
+      if (opts.select) {
+        modalSelectIn.innerHTML = opts.select.options
+          .map(o => `<option value="${escapeHtml(String(o.value))}"${o.value === opts.select.value ? ' selected' : ''}>${escapeHtml(o.label)}</option>`)
+          .join('');
+      }
+
+      modalOk.textContent  = opts.okText || 'OK';
+      modalCancel.textContent = opts.cancelText || 'Cancel';
+      modalCancel.hidden = opts.cancelText === null;
+      modalOk.classList.toggle('danger', !!opts.destructive);
+
+      const cleanup = () => {
+        modalEl.hidden = true;
+        modalOk.onclick = null;
+        modalCancel.onclick = null;
+        modalEl.onclick = null;
+        document.removeEventListener('keydown', onKey);
+      };
+      const submit = () => {
+        const result = {};
+        if (opts.text)   result.text = modalTextIn.value.trim();
+        if (opts.select) result.select = modalSelectIn.value;
+        cleanup();
+        resolve(opts.text || opts.select ? result : true);
+      };
+      const cancel = () => { cleanup(); resolve(null); };
+      const onKey = (e) => {
+        if (e.key === 'Escape') cancel();
+        else if (e.key === 'Enter' && !opts.select) submit();
+      };
+
+      modalOk.onclick = submit;
+      modalCancel.onclick = cancel;
+      modalEl.onclick = (e) => { if (e.target === modalEl) cancel(); };
+      document.addEventListener('keydown', onKey);
+
+      modalEl.hidden = false;
+      if (opts.text) setTimeout(() => modalTextIn.focus(), 50);
+    });
+  }
+
+  const confirmDialog = (message, { title = '', okText = 'OK', destructive = false } = {}) =>
+    showModal({ title, message, okText, destructive }).then(r => r !== null);
+  const promptDialog = (message, defaultValue = '', { title = '', placeholder = '', okText = 'OK' } = {}) =>
+    showModal({ title, message, okText, text: { value: defaultValue, placeholder } }).then(r => r ? r.text : null);
+  const alertDialog = (message, { title = '' } = {}) =>
+    showModal({ title, message, cancelText: null });
 
   function labelFor(score, par) {
     if (score == null) return { text: '', cls: '' };
@@ -483,8 +723,35 @@
     const c = currentCourse();
     courseNameEl.textContent = c.name;
     const d = new Date(round.date);
-    dateEl.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    dateBtn.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
+
+  function isoLocal(ts) {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  dateBtn.addEventListener('click', () => {
+    dateInput.value = isoLocal(round.date);
+    if (typeof dateInput.showPicker === 'function') {
+      try { dateInput.showPicker(); return; } catch(e) {}
+    }
+    dateInput.focus();
+    dateInput.click();
+  });
+
+  dateInput.addEventListener('change', () => {
+    if (!dateInput.value) return;
+    const [y, m, d] = dateInput.value.split('-').map(Number);
+    const dt = new Date(round.date);
+    dt.setFullYear(y, m - 1, d);
+    round.date = dt.getTime();
+    saveRound();
+    renderHeader();
+  });
 
   function renderCoursePanel() {
     const c = currentCourse();
@@ -545,6 +812,23 @@
     }
   }
 
+  function diffStr(diff) {
+    if (diff === 0) return 'E';
+    return diff > 0 ? '+' + diff : String(diff);
+  }
+
+  function splitTotals(scores, pars, from, to) {
+    let score = 0, par = 0, played = 0;
+    for (let i = from; i < to; i++) {
+      if (scores[i] != null) {
+        score += scores[i];
+        par += pars[i];
+        played++;
+      }
+    }
+    return { score, par, played, diff: score - par };
+  }
+
   function updateSummary() {
     const c = currentCourse();
     const played = round.scores.filter(s => s != null);
@@ -564,6 +848,18 @@
     } else {
       toParEl.textContent = String(diff);
       toParEl.classList.add('info');
+    }
+
+    if (c.holes === 18) {
+      const out = splitTotals(round.scores, c.pars, 0, 9);
+      const inn = splitTotals(round.scores, c.pars, 9, 18);
+      const fmt = (s) => s.played === 0
+        ? '<b>—</b>'
+        : `<b>${s.score}</b> <span class="diff">${diffStr(s.diff)}</span>`;
+      splitsEl.innerHTML = `<span>Out ${fmt(out)}</span><span>In ${fmt(inn)}</span>`;
+      splitsEl.hidden = false;
+    } else {
+      splitsEl.hidden = true;
     }
   }
 
@@ -613,13 +909,13 @@
   });
 
   // --- Course switching ---
-  courseSelect.addEventListener('change', () => {
+  courseSelect.addEventListener('change', async () => {
     const newId = courseSelect.value;
     if (newId === currentId) return;
     const hasScores = round.scores.some(s => s != null);
-    if (hasScores && !confirm('Switching courses will clear the current scores. Continue?')) {
-      courseSelect.value = currentId;
-      return;
+    if (hasScores) {
+      const ok = await confirmDialog('Switching courses will clear the current scores. Continue?', { okText: 'Switch', destructive: true });
+      if (!ok) { courseSelect.value = currentId; return; }
     }
     currentId = newId;
     saveCourses();
@@ -640,14 +936,17 @@
   });
 
   // --- 9 / 18 toggle ---
-  holesToggle.addEventListener('click', (e) => {
+  holesToggle.addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-holes]');
     if (!b) return;
     const newHoles = parseInt(b.dataset.holes, 10);
     const c = currentCourse();
     if (c.holes === newHoles) return;
     const hasScores = round.scores.some(s => s != null);
-    if (hasScores && !confirm('Changing hole count will clear the current scores. Continue?')) return;
+    if (hasScores) {
+      const ok = await confirmDialog('Changing hole count will clear the current scores. Continue?', { okText: 'Change', destructive: true });
+      if (!ok) return;
+    }
 
     if (newHoles > c.holes) {
       // Extend pars with defaults
@@ -664,11 +963,17 @@
   });
 
   // --- New / duplicate / delete ---
-  document.getElementById('newCourse').addEventListener('click', () => {
-    const name = (prompt('New course name', 'New Course') || '').trim();
+  document.getElementById('newCourse').addEventListener('click', async () => {
+    const result = await showModal({
+      title: 'New course',
+      text: { value: 'New Course', placeholder: 'Course name' },
+      select: { value: '18', options: [{ value: '18', label: '18 holes' }, { value: '9', label: '9 holes' }] },
+      okText: 'Create'
+    });
+    if (!result) return;
+    const name = (result.text || '').trim();
     if (!name) return;
-    const holesStr = prompt('Holes (9 or 18)?', '18');
-    const holes = parseInt(holesStr, 10) === 9 ? 9 : 18;
+    const holes = result.select === '9' ? 9 : 18;
     const c = { id: uid(), name, holes, pars: defaultPars(holes) };
     courses.push(c);
     currentId = c.id;
@@ -689,10 +994,11 @@
     render();
   });
 
-  document.getElementById('deleteCourse').addEventListener('click', () => {
-    if (courses.length === 1) { alert('You need at least one course.'); return; }
+  document.getElementById('deleteCourse').addEventListener('click', async () => {
+    if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
     const c = currentCourse();
-    if (!confirm(`Delete course "${c.name}"?`)) return;
+    const ok = await confirmDialog(`Delete course "${c.name}"?`, { okText: 'Delete', destructive: true });
+    if (!ok) return;
     courses = courses.filter(x => x.id !== currentId);
     currentId = courses[0].id;
     saveCourses();
@@ -702,8 +1008,9 @@
   });
 
   // --- Reset round ---
-  document.getElementById('reset').addEventListener('click', () => {
-    if (!confirm('Reset round? All scores will be cleared.')) return;
+  document.getElementById('reset').addEventListener('click', async () => {
+    const ok = await confirmDialog('Reset round? All scores will be cleared.', { okText: 'Reset', destructive: true });
+    if (!ok) return;
     round = newRound(currentId);
     saveRound();
     render();
@@ -717,10 +1024,10 @@
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch(e) {}
   };
 
-  document.getElementById('save').addEventListener('click', () => {
+  document.getElementById('save').addEventListener('click', async () => {
     const c = currentCourse();
     const played = round.scores.filter(s => s != null);
-    if (played.length === 0) { alert('No scores to save yet.'); return; }
+    if (played.length === 0) { await alertDialog('No scores to save yet.'); return; }
     const total = played.reduce((a,b) => a+b, 0);
     const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const entry = {
@@ -737,7 +1044,8 @@
     const h = loadHistory();
     h.unshift(entry);
     saveHistory(h);
-    if (confirm('Round saved. Start a new round?')) {
+    const startNew = await confirmDialog('Round saved. Start a new round?', { okText: 'New round' });
+    if (startNew) {
       round = newRound(currentId);
       saveRound();
       render();
@@ -745,6 +1053,59 @@
   });
 
   const historyViewEl = document.getElementById('historyView');
+  const expandedHistory = new Set();
+
+  function scoreCellClass(score, par) {
+    if (score == null) return 'empty';
+    const d = score - par;
+    if (d < 0)  return 'score-under';
+    if (d === 1) return 'score-bogey';
+    if (d > 1) return 'score-over';
+    return '';
+  }
+
+  function holeGridHTML(scores, pars, from, to) {
+    const headers = [];
+    const parRow  = [];
+    const scoreRow = [];
+    for (let i = from; i < to; i++) {
+      headers.push(`<div class="cell header">${i + 1}</div>`);
+      parRow.push(`<div class="cell header">${pars[i]}</div>`);
+      const s = scores[i];
+      const cls = scoreCellClass(s, pars[i]);
+      scoreRow.push(`<div class="cell ${cls}">${s == null ? '–' : s}</div>`);
+    }
+    return `<div class="hole-grid">${headers.join('')}${parRow.join('')}${scoreRow.join('')}</div>`;
+  }
+
+  function historyDetailHTML(r) {
+    const holes = r.holes || (r.pars ? r.pars.length : r.scores.length);
+    const pars = r.pars || Array(holes).fill(4);
+    if (holes === 18) {
+      const out = splitTotals(r.scores, pars, 0, 9);
+      const inn = splitTotals(r.scores, pars, 9, 18);
+      return `
+        <div class="history-detail">
+          <div class="history-detail-section">
+            <div class="history-detail-title"><span>Out</span><span>${out.played ? out.score + ' (' + diffStr(out.diff) + ')' : '—'}</span></div>
+            ${holeGridHTML(r.scores, pars, 0, 9)}
+          </div>
+          <div class="history-detail-section">
+            <div class="history-detail-title"><span>In</span><span>${inn.played ? inn.score + ' (' + diffStr(inn.diff) + ')' : '—'}</span></div>
+            ${holeGridHTML(r.scores, pars, 9, 18)}
+          </div>
+        </div>`;
+    }
+    const tot = splitTotals(r.scores, pars, 0, holes);
+    return `
+      <div class="history-detail">
+        <div class="history-detail-section">
+          <div class="history-detail-title"><span>Holes</span><span>${tot.played ? tot.score + ' (' + diffStr(tot.diff) + ')' : '—'}</span></div>
+          ${holeGridHTML(r.scores, pars, 0, holes)}
+        </div>
+      </div>`;
+  }
+
   function renderHistory() {
     const h = loadHistory();
     if (h.length === 0) {
@@ -754,28 +1115,44 @@
     historyViewEl.innerHTML = h.map((r, idx) => {
       const dd = new Date(r.date);
       const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-      const toParStr = r.toPar === 0 ? 'E' : (r.toPar > 0 ? '+' + r.toPar : String(r.toPar));
+      const toParStr = diffStr(r.toPar);
       const toParCls = r.toPar > 0 ? 'over' : (r.toPar < 0 ? 'under' : 'par');
       const courseLabel = r.courseName ? `${escapeHtml(r.courseName)} · ${r.holes || (r.pars ? r.pars.length : 18)}` : '';
+      const expanded = expandedHistory.has(idx);
       return `
-        <div class="hole" style="grid-template-columns: 1fr auto auto;">
+        <div class="hole history-row" data-idx="${idx}" style="grid-template-columns: 1fr auto auto;">
           <div>
             <div class="hole-num" style="font-size:14px;">${label}</div>
             <div class="hole-par">${courseLabel ? courseLabel + ' · ' : ''}thru ${r.thru}</div>
           </div>
           <div style="font-size:20px; font-weight:600;">${r.total}</div>
           <div class="label ${toParCls}" style="min-width:36px;">${toParStr}</div>
-          <button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete</button>
+          ${expanded ? historyDetailHTML(r) : ''}
+          ${expanded ? `<button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete round</button>` : ''}
         </div>
       `;
     }).join('');
+
+    historyViewEl.querySelectorAll('.history-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('button[data-del]')) return;
+        const idx = parseInt(row.dataset.idx, 10);
+        if (expandedHistory.has(idx)) expandedHistory.delete(idx);
+        else expandedHistory.add(idx);
+        renderHistory();
+      });
+    });
+
     historyViewEl.querySelectorAll('button[data-del]').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('Delete this round?')) return;
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const ok = await confirmDialog('Delete this round?', { okText: 'Delete', destructive: true });
+        if (!ok) return;
         const idx = parseInt(b.dataset.del, 10);
         const hh = loadHistory();
         hh.splice(idx, 1);
         saveHistory(hh);
+        expandedHistory.clear();
         renderHistory();
       });
     });
