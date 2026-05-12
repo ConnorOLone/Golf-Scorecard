@@ -340,6 +340,88 @@
   .btn:active { background: #f2f2f7; }
   .btn.danger { color: #d23f3f; }
 
+  /* Stats */
+  .stats-block {
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .stats-title {
+    font-size: 11px;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .stats-headline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  .stats-headline .v {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .stats-headline .l {
+    font-size: 10px;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .stats-headline .sub {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stats-dist {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .stats-dist .pill {
+    background: #f5f5f7;
+    border-radius: 8px;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .stats-dist .pill .count {
+    font-size: 16px;
+    font-weight: 600;
+    display: block;
+    letter-spacing: -0.3px;
+  }
+  .stats-dist .pill .lbl { color: #8e8e93; }
+  .stats-dist .pill.under .count { color: #0f6e56; }
+  .stats-dist .pill.bogey .count { color: #c47200; }
+  .stats-dist .pill.over .count { color: #d23f3f; }
+  .stats-courses {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stats-course {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 6px 0;
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+  }
+  .stats-course:first-child { border-top: none; }
+  .stats-course .name { font-weight: 500; }
+  .stats-course .meta { font-size: 11px; color: #8e8e93; }
+  .stats-course .best { font-size: 12px; font-weight: 600; }
+
   /* History expand */
   .history-row { cursor: pointer; }
   .history-detail {
@@ -470,6 +552,9 @@
     .modal-actions button { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.1); }
     .modal-actions button:active { background: #3a3a3c; }
     .storage-status { color: #8e8e93; }
+    .stats-block { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+    .stats-dist .pill { background: #2c2c2e; }
+    .stats-course { border-top-color: rgba(255,255,255,0.06); }
     .hole-grid .cell { background: #2c2c2e; }
     .hole-grid .cell.score-under { background: #1d3d2e; color: #6dcfa0; }
     .hole-grid .cell.score-over  { background: #3d1d1d; color: #ff9080; }
@@ -1136,13 +1221,117 @@
       </div>`;
   }
 
+  function computeStats(h) {
+    const dist = { eagle: 0, birdie: 0, par: 0, bogey: 0, double: 0, triple: 0 };
+    const byCourse = new Map();
+    let bestRound = null;
+    let totalToPar = 0;
+    let countedRounds = 0;
+
+    for (const r of h) {
+      if (!Array.isArray(r.scores) || !Array.isArray(r.pars)) continue;
+      for (let i = 0; i < r.scores.length; i++) {
+        const s = r.scores[i];
+        if (s == null) continue;
+        const d = s - r.pars[i];
+        if (d <= -2) dist.eagle++;
+        else if (d === -1) dist.birdie++;
+        else if (d === 0) dist.par++;
+        else if (d === 1) dist.bogey++;
+        else if (d === 2) dist.double++;
+        else if (d >= 3) dist.triple++;
+      }
+
+      if (typeof r.toPar === 'number' && Number.isFinite(r.toPar)) {
+        totalToPar += r.toPar;
+        countedRounds++;
+        if (!bestRound || r.toPar < bestRound.toPar) bestRound = r;
+      }
+
+      const key = r.courseId || (r.courseName + '·' + (r.holes || (r.pars ? r.pars.length : 18)));
+      const name = r.courseName || 'Unknown';
+      const holes = r.holes || (r.pars ? r.pars.length : 18);
+      let g = byCourse.get(key);
+      if (!g) { g = { name, holes, count: 0, sumToPar: 0, best: null }; byCourse.set(key, g); }
+      g.count++;
+      if (typeof r.toPar === 'number') {
+        g.sumToPar += r.toPar;
+        if (!g.best || r.toPar < g.best.toPar) g.best = r;
+      }
+    }
+
+    const avgToPar = countedRounds ? totalToPar / countedRounds : 0;
+    const courses = Array.from(byCourse.values()).sort((a, b) => b.count - a.count);
+    return { dist, bestRound, avgToPar, total: h.length, courses };
+  }
+
+  function statsHTML(h) {
+    const s = computeStats(h);
+    if (s.total === 0) return '';
+
+    const bestDate = s.bestRound ? new Date(s.bestRound.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const bestSub = s.bestRound ? `${escapeHtml(s.bestRound.courseName || '')} · ${bestDate}` : '';
+    const bestText = s.bestRound
+      ? `${s.bestRound.total} <span style="font-size:14px; color:#8e8e93;">${diffStr(s.bestRound.toPar)}</span>`
+      : '—';
+    const avgText = Number.isFinite(s.avgToPar)
+      ? (s.avgToPar === 0 ? 'E' : (s.avgToPar > 0 ? '+' : '') + s.avgToPar.toFixed(1))
+      : '—';
+
+    const overall = `
+      <div class="stats-block">
+        <div class="stats-title">Overall</div>
+        <div class="stats-headline">
+          <div><div class="v">${s.total}</div><div class="l">Rounds</div></div>
+          <div><div class="v">${bestText}</div><div class="l">Best</div><div class="sub">${bestSub}</div></div>
+          <div><div class="v">${avgText}</div><div class="l">Avg to par</div></div>
+        </div>
+      </div>`;
+
+    const dist = `
+      <div class="stats-block">
+        <div class="stats-title">Scoring</div>
+        <div class="stats-dist">
+          <div class="pill under"><span class="count">${s.dist.eagle}</span><span class="lbl">Eagle+</span></div>
+          <div class="pill under"><span class="count">${s.dist.birdie}</span><span class="lbl">Birdie</span></div>
+          <div class="pill"><span class="count">${s.dist.par}</span><span class="lbl">Par</span></div>
+          <div class="pill bogey"><span class="count">${s.dist.bogey}</span><span class="lbl">Bogey</span></div>
+          <div class="pill over"><span class="count">${s.dist.double}</span><span class="lbl">Double</span></div>
+          <div class="pill over"><span class="count">${s.dist.triple}</span><span class="lbl">Triple+</span></div>
+        </div>
+      </div>`;
+
+    const courses = s.courses.length > 1 ? `
+      <div class="stats-block">
+        <div class="stats-title">By course</div>
+        <div class="stats-courses">
+          ${s.courses.map(g => {
+            const avg = g.count ? g.sumToPar / g.count : 0;
+            const avgStr = g.count ? (avg === 0 ? 'E' : (avg > 0 ? '+' : '') + avg.toFixed(1)) : '—';
+            const bestStr = g.best ? `${g.best.total} ${diffStr(g.best.toPar)}` : '—';
+            return `
+              <div class="stats-course">
+                <div>
+                  <div class="name">${escapeHtml(g.name)}</div>
+                  <div class="meta">${g.holes} holes · ${g.count} round${g.count === 1 ? '' : 's'} · avg ${avgStr}</div>
+                </div>
+                <div class="best">${bestStr}</div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    return overall + dist + courses;
+  }
+
   function renderHistory() {
     const h = loadHistory();
     if (h.length === 0) {
       historyViewEl.innerHTML = '<div style="text-align:center; color:#8e8e93; font-size:14px; padding:16px;">No saved rounds yet.</div>';
       return;
     }
-    historyViewEl.innerHTML = h.map((r, idx) => {
+    const stats = statsHTML(h);
+    historyViewEl.innerHTML = stats + h.map((r, idx) => {
       const dd = new Date(r.date);
       const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       const toParStr = diffStr(r.toPar);
@@ -1296,6 +1485,20 @@
   requestPersistOnce();
 
   render();
+
+  // Keep the screen awake while the app is open (auto-released when tab hides).
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+  });
+  requestWakeLock();
 
   // Service worker for offline support
   if ('serviceWorker' in navigator) {
