@@ -36,12 +36,23 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    gap: 12px;
   }
   h1 {
     font-size: 22px;
     font-weight: 600;
     margin: 0;
     letter-spacing: -0.4px;
+  }
+  .header-meta {
+    font-size: 13px;
+    color: #8e8e93;
+    text-align: right;
+    line-height: 1.3;
+  }
+  .header-meta .course-name {
+    color: #1c1c1e;
+    font-weight: 500;
   }
   .summary {
     display: grid;
@@ -69,28 +80,107 @@
   .summary-value.danger { color: #ffb4a8; }
   .summary-value.info { color: #a8e6cf; }
 
-  details.par-config {
+  details.panel {
     background: white;
     border-radius: 12px;
     padding: 8px 12px;
     margin-bottom: 12px;
     border: 0.5px solid rgba(0,0,0,0.1);
   }
-  details.par-config summary {
+  details.panel > summary {
     font-size: 13px;
     color: #6b6b70;
     cursor: pointer;
     padding: 4px 0;
     list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  details.par-config summary::-webkit-details-marker { display: none; }
-  details.par-config summary::after { content: "›"; float: right; transition: transform 0.2s; }
-  details.par-config[open] summary::after { transform: rotate(90deg); }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary::after {
+    content: "›";
+    transition: transform 0.2s;
+    color: #c7c7cc;
+    font-size: 18px;
+    margin-left: 8px;
+  }
+  details.panel[open] > summary::after { transform: rotate(90deg); }
+  .panel-body { padding: 10px 0 4px; }
+  .panel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .panel-row label {
+    font-size: 12px;
+    color: #6b6b70;
+    width: 56px;
+    flex-shrink: 0;
+  }
+  .panel-row select, .panel-row input[type="text"] {
+    flex: 1;
+    height: 36px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    background: #f5f5f7;
+    color: inherit;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 0 10px;
+    min-width: 0;
+  }
+  .segmented {
+    display: flex;
+    gap: 0;
+    background: #f2f2f7;
+    border-radius: 8px;
+    padding: 2px;
+    flex: 1;
+  }
+  .segmented button {
+    flex: 1;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #6b6b70;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .segmented button.active {
+    background: white;
+    color: #1c1c1e;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .panel-buttons {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .panel-buttons button {
+    flex: 1;
+    height: 36px;
+    border-radius: 8px;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    background: white;
+    color: #1c1c1e;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .panel-buttons button:active { background: #f2f2f7; }
+  .panel-buttons button.danger { color: #d23f3f; }
+
   .par-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    margin-top: 10px;
+    margin: 12px 0 6px;
   }
   .par-cell {
     display: flex;
@@ -105,6 +195,8 @@
     border: 0.5px solid rgba(0,0,0,0.15);
     border-radius: 6px;
     background: #f5f5f7;
+    color: inherit;
+    font-family: inherit;
     font-size: 13px;
     padding: 0 6px;
   }
@@ -200,11 +292,16 @@
 
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
-    .hole, details.par-config, .btn { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+    .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
     .stepper button { background: #2c2c2e; color: #f5f5f7; }
     .stepper button:active { background: #3a3a3c; }
-    .par-cell select { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
-    .hole-par, .par-cell span, details.par-config summary { color: #8e8e93; }
+    .par-cell select, .panel-row select, .panel-row input[type="text"] { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
+    .segmented { background: #2c2c2e; }
+    .segmented button { color: #8e8e93; }
+    .segmented button.active { background: #48484a; color: #f5f5f7; box-shadow: none; }
+    .hole-par, .par-cell span, details.panel > summary, .panel-row label { color: #8e8e93; }
+    .header-meta { color: #8e8e93; }
+    .header-meta .course-name { color: #f5f5f7; }
     .score.empty { color: #48484a; }
   }
 </style>
@@ -213,7 +310,10 @@
 <div class="container">
   <header>
     <h1>Scorecard</h1>
-    <div style="font-size: 13px; color: #8e8e93;" id="date"></div>
+    <div class="header-meta">
+      <div class="course-name" id="courseName">—</div>
+      <div id="date"></div>
+    </div>
   </header>
 
   <div class="summary">
@@ -231,9 +331,31 @@
     </div>
   </div>
 
-  <details class="par-config">
-    <summary>Set par per hole</summary>
-    <div class="par-grid" id="parConfig"></div>
+  <details class="panel" id="coursePanel">
+    <summary><span>Course</span></summary>
+    <div class="panel-body">
+      <div class="panel-row">
+        <label>Course</label>
+        <select id="courseSelect"></select>
+      </div>
+      <div class="panel-row">
+        <label>Name</label>
+        <input type="text" id="courseNameInput" placeholder="Course name" autocomplete="off" autocapitalize="words">
+      </div>
+      <div class="panel-row">
+        <label>Holes</label>
+        <div class="segmented" id="holesToggle">
+          <button data-holes="9">9</button>
+          <button data-holes="18">18</button>
+        </div>
+      </div>
+      <div class="par-grid" id="parConfig"></div>
+      <div class="panel-buttons">
+        <button id="newCourse">New</button>
+        <button id="duplicateCourse">Duplicate</button>
+        <button id="deleteCourse" class="danger">Delete</button>
+      </div>
+    </div>
   </details>
 
   <div class="holes" id="holes"></div>
@@ -249,24 +371,100 @@
 
 <script>
 (function() {
-  const HOLES = 18;
-  const STORAGE_KEY = 'golf_round_v1';
-  const defaultPars = [4,4,3,5,4,4,3,4,5,4,4,3,5,4,4,3,4,5];
+  const COURSES_KEY = 'golf_courses_v1';
+  const ROUND_KEY = 'golf_round_v2';
+  const LEGACY_ROUND_KEY = 'golf_round_v1';
+  const HISTORY_KEY = 'golf_history_v1';
 
-  let state = { scores: Array(HOLES).fill(null), pars: defaultPars.slice(), date: Date.now() };
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (saved && saved.scores && saved.pars) state = Object.assign(state, saved);
-  } catch(e) {}
+  const DEFAULT_PARS_18 = [4,4,3,5,4,4,3,4,5,4,4,3,5,4,4,3,4,5];
+  const DEFAULT_PARS_9  = [4,4,3,5,4,4,3,4,5];
 
-  const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-  // Format date
-  const d = new Date(state.date);
-  document.getElementById('date').textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  function defaultPars(holes) {
+    return (holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS_18).slice();
+  }
 
-  const holesEl = document.getElementById('holes');
-  const parConfigEl = document.getElementById('parConfig');
+  function loadCourses() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(COURSES_KEY) || 'null');
+      if (raw && Array.isArray(raw.courses) && raw.courses.length) return raw;
+    } catch(e) {}
+    return null;
+  }
+  function saveCourses() {
+    try { localStorage.setItem(COURSES_KEY, JSON.stringify({ courses, currentId })); } catch(e) {}
+  }
+
+  function loadRound() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');
+      if (raw && Array.isArray(raw.scores)) return raw;
+    } catch(e) {}
+    return null;
+  }
+  function saveRound() {
+    try { localStorage.setItem(ROUND_KEY, JSON.stringify(round)); } catch(e) {}
+  }
+
+  // --- Initialise courses (with migration from v1) ---
+  let courses, currentId;
+  const stored = loadCourses();
+  if (stored) {
+    courses = stored.courses;
+    currentId = stored.currentId && courses.find(c => c.id === stored.currentId) ? stored.currentId : courses[0].id;
+  } else {
+    // Migration: pull pars from legacy round if present
+    let migratedPars = null;
+    try {
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_ROUND_KEY) || 'null');
+      if (legacy && Array.isArray(legacy.pars) && legacy.pars.length === 18) migratedPars = legacy.pars.slice();
+    } catch(e) {}
+    courses = [{
+      id: uid(),
+      name: 'My Course',
+      holes: 18,
+      pars: migratedPars || DEFAULT_PARS_18.slice()
+    }];
+    currentId = courses[0].id;
+    saveCourses();
+  }
+
+  function currentCourse() {
+    return courses.find(c => c.id === currentId) || courses[0];
+  }
+
+  // --- Initialise round ---
+  let round = loadRound();
+  if (!round || round.courseId !== currentId || !Array.isArray(round.scores) || round.scores.length !== currentCourse().holes) {
+    // Try legacy round once
+    if (!round) {
+      try {
+        const legacy = JSON.parse(localStorage.getItem(LEGACY_ROUND_KEY) || 'null');
+        if (legacy && Array.isArray(legacy.scores) && legacy.scores.length === 18 && currentCourse().holes === 18) {
+          round = { courseId: currentId, scores: legacy.scores.slice(), date: legacy.date || Date.now() };
+        }
+      } catch(e) {}
+    }
+    if (!round || round.courseId !== currentId || round.scores.length !== currentCourse().holes) {
+      round = newRound(currentId);
+    }
+    saveRound();
+  }
+
+  function newRound(courseId) {
+    const c = courses.find(x => x.id === courseId) || courses[0];
+    return { courseId: c.id, scores: Array(c.holes).fill(null), date: Date.now() };
+  }
+
+  // --- DOM refs ---
+  const holesEl       = document.getElementById('holes');
+  const parConfigEl   = document.getElementById('parConfig');
+  const courseSelect  = document.getElementById('courseSelect');
+  const courseNameIn  = document.getElementById('courseNameInput');
+  const holesToggle   = document.getElementById('holesToggle');
+  const courseNameEl  = document.getElementById('courseName');
+  const dateEl        = document.getElementById('date');
 
   function labelFor(score, par) {
     if (score == null) return { text: '', cls: '' };
@@ -281,11 +479,52 @@
     return { text: '+' + diff, cls: 'over' };
   }
 
-  function render() {
+  function renderHeader() {
+    const c = currentCourse();
+    courseNameEl.textContent = c.name;
+    const d = new Date(round.date);
+    dateEl.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function renderCoursePanel() {
+    const c = currentCourse();
+    // Course dropdown
+    courseSelect.innerHTML = courses.map(co =>
+      `<option value="${co.id}" ${co.id === currentId ? 'selected' : ''}>${escapeHtml(co.name)} · ${co.holes}</option>`
+    ).join('');
+
+    // Name input
+    courseNameIn.value = c.name;
+
+    // 9/18 segmented
+    holesToggle.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.holes, 10) === c.holes);
+    });
+
+    // Par grid
+    parConfigEl.innerHTML = '';
+    for (let i = 0; i < c.holes; i++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'par-cell';
+      wrap.innerHTML = `
+        <span>H${i+1}</span>
+        <select data-par-hole="${i}">
+          <option value="3" ${c.pars[i]===3?'selected':''}>3</option>
+          <option value="4" ${c.pars[i]===4?'selected':''}>4</option>
+          <option value="5" ${c.pars[i]===5?'selected':''}>5</option>
+          <option value="6" ${c.pars[i]===6?'selected':''}>6</option>
+        </select>
+      `;
+      parConfigEl.appendChild(wrap);
+    }
+  }
+
+  function renderHoles() {
+    const c = currentCourse();
     holesEl.innerHTML = '';
-    for (let i = 0; i < HOLES; i++) {
-      const par = state.pars[i];
-      const score = state.scores[i];
+    for (let i = 0; i < c.holes; i++) {
+      const par = c.pars[i];
+      const score = round.scores[i];
       const lbl = labelFor(score, par);
 
       const row = document.createElement('div');
@@ -304,29 +543,13 @@
       `;
       holesEl.appendChild(row);
     }
-
-    parConfigEl.innerHTML = '';
-    for (let i = 0; i < HOLES; i++) {
-      const wrap = document.createElement('div');
-      wrap.className = 'par-cell';
-      wrap.innerHTML = `
-        <span>H${i+1}</span>
-        <select data-par-hole="${i}">
-          <option value="3" ${state.pars[i]===3?'selected':''}>3</option>
-          <option value="4" ${state.pars[i]===4?'selected':''}>4</option>
-          <option value="5" ${state.pars[i]===5?'selected':''}>5</option>
-        </select>
-      `;
-      parConfigEl.appendChild(wrap);
-    }
-
-    updateSummary();
   }
 
   function updateSummary() {
-    const played = state.scores.filter(s => s != null);
+    const c = currentCourse();
+    const played = round.scores.filter(s => s != null);
     const total = played.reduce((a,b) => a + b, 0);
-    const parTotal = state.scores.reduce((acc, s, i) => s == null ? acc : acc + state.pars[i], 0);
+    const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const diff = total - parTotal;
 
     document.getElementById('total').textContent = total;
@@ -344,46 +567,149 @@
     }
   }
 
+  function render() {
+    renderHeader();
+    renderCoursePanel();
+    renderHoles();
+    updateSummary();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+
+  // --- Score stepper ---
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-hole]');
     if (!btn) return;
-    const i = parseInt(btn.dataset.hole);
+    const i = parseInt(btn.dataset.hole, 10);
     const action = btn.dataset.action;
-    const current = state.scores[i];
+    const c = currentCourse();
+    const current = round.scores[i];
     if (action === 'inc') {
-      state.scores[i] = current == null ? state.pars[i] : Math.min(current + 1, 15);
+      round.scores[i] = current == null ? c.pars[i] : Math.min(current + 1, 15);
     } else {
       if (current == null) return;
-      state.scores[i] = current - 1;
-      if (state.scores[i] < 1) state.scores[i] = null;
+      round.scores[i] = current - 1;
+      if (round.scores[i] < 1) round.scores[i] = null;
     }
-    save();
-    render();
-    // Haptic-ish feedback via vibration where supported
+    saveRound();
+    renderHoles();
+    updateSummary();
     if (navigator.vibrate) navigator.vibrate(5);
   });
 
-  document.addEventListener('change', (e) => {
+  // --- Par select ---
+  parConfigEl.addEventListener('change', (e) => {
     const sel = e.target.closest('select[data-par-hole]');
     if (!sel) return;
-    const i = parseInt(sel.dataset.parHole);
-    state.pars[i] = parseInt(sel.value);
-    save();
+    const i = parseInt(sel.dataset.parHole, 10);
+    currentCourse().pars[i] = parseInt(sel.value, 10);
+    saveCourses();
+    renderHoles();
+    updateSummary();
+  });
+
+  // --- Course switching ---
+  courseSelect.addEventListener('change', () => {
+    const newId = courseSelect.value;
+    if (newId === currentId) return;
+    const hasScores = round.scores.some(s => s != null);
+    if (hasScores && !confirm('Switching courses will clear the current scores. Continue?')) {
+      courseSelect.value = currentId;
+      return;
+    }
+    currentId = newId;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
     render();
   });
 
+  // --- Course rename ---
+  courseNameIn.addEventListener('input', () => {
+    const v = courseNameIn.value.trim() || 'Untitled';
+    currentCourse().name = v;
+    saveCourses();
+    courseNameEl.textContent = v;
+    // Update the dropdown option label without rebuilding everything
+    const opt = courseSelect.querySelector(`option[value="${currentId}"]`);
+    if (opt) opt.textContent = `${v} · ${currentCourse().holes}`;
+  });
+
+  // --- 9 / 18 toggle ---
+  holesToggle.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-holes]');
+    if (!b) return;
+    const newHoles = parseInt(b.dataset.holes, 10);
+    const c = currentCourse();
+    if (c.holes === newHoles) return;
+    const hasScores = round.scores.some(s => s != null);
+    if (hasScores && !confirm('Changing hole count will clear the current scores. Continue?')) return;
+
+    if (newHoles > c.holes) {
+      // Extend pars with defaults
+      const filler = defaultPars(18).slice(c.holes, newHoles);
+      c.pars = c.pars.concat(filler);
+    } else {
+      c.pars = c.pars.slice(0, newHoles);
+    }
+    c.holes = newHoles;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
+    render();
+  });
+
+  // --- New / duplicate / delete ---
+  document.getElementById('newCourse').addEventListener('click', () => {
+    const name = (prompt('New course name', 'New Course') || '').trim();
+    if (!name) return;
+    const holesStr = prompt('Holes (9 or 18)?', '18');
+    const holes = parseInt(holesStr, 10) === 9 ? 9 : 18;
+    const c = { id: uid(), name, holes, pars: defaultPars(holes) };
+    courses.push(c);
+    currentId = c.id;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
+    render();
+  });
+
+  document.getElementById('duplicateCourse').addEventListener('click', () => {
+    const src = currentCourse();
+    const c = { id: uid(), name: src.name + ' copy', holes: src.holes, pars: src.pars.slice() };
+    courses.push(c);
+    currentId = c.id;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
+    render();
+  });
+
+  document.getElementById('deleteCourse').addEventListener('click', () => {
+    if (courses.length === 1) { alert('You need at least one course.'); return; }
+    const c = currentCourse();
+    if (!confirm(`Delete course "${c.name}"?`)) return;
+    courses = courses.filter(x => x.id !== currentId);
+    currentId = courses[0].id;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
+    render();
+  });
+
+  // --- Reset round ---
   document.getElementById('reset').addEventListener('click', () => {
     if (!confirm('Reset round? All scores will be cleared.')) return;
-    state.scores = Array(HOLES).fill(null);
-    state.date = Date.now();
-    const dd = new Date(state.date);
-    document.getElementById('date').textContent = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    save();
+    round = newRound(currentId);
+    saveRound();
     render();
   });
 
-  // History: list of completed rounds
-  const HISTORY_KEY = 'golf_history_v1';
+  // --- History ---
   const loadHistory = () => {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
   };
@@ -392,76 +718,81 @@
   };
 
   document.getElementById('save').addEventListener('click', () => {
-    const played = state.scores.filter(s => s != null);
+    const c = currentCourse();
+    const played = round.scores.filter(s => s != null);
     if (played.length === 0) { alert('No scores to save yet.'); return; }
     const total = played.reduce((a,b) => a+b, 0);
-    const parTotal = state.scores.reduce((acc, s, i) => s == null ? acc : acc + state.pars[i], 0);
-    const round = {
-      date: state.date,
-      scores: state.scores.slice(),
-      pars: state.pars.slice(),
+    const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
+    const entry = {
+      date: round.date,
+      courseId: c.id,
+      courseName: c.name,
+      holes: c.holes,
+      scores: round.scores.slice(),
+      pars: c.pars.slice(),
       total,
       toPar: total - parTotal,
       thru: played.length
     };
     const h = loadHistory();
-    h.unshift(round);
+    h.unshift(entry);
     saveHistory(h);
     if (confirm('Round saved. Start a new round?')) {
-      state.scores = Array(HOLES).fill(null);
-      state.date = Date.now();
-      const dd = new Date(state.date);
-      document.getElementById('date').textContent = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      save();
+      round = newRound(currentId);
+      saveRound();
       render();
     }
   });
 
   const historyViewEl = document.getElementById('historyView');
+  function renderHistory() {
+    const h = loadHistory();
+    if (h.length === 0) {
+      historyViewEl.innerHTML = '<div style="text-align:center; color:#8e8e93; font-size:14px; padding:16px;">No saved rounds yet.</div>';
+      return;
+    }
+    historyViewEl.innerHTML = h.map((r, idx) => {
+      const dd = new Date(r.date);
+      const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      const toParStr = r.toPar === 0 ? 'E' : (r.toPar > 0 ? '+' + r.toPar : String(r.toPar));
+      const toParCls = r.toPar > 0 ? 'over' : (r.toPar < 0 ? 'under' : 'par');
+      const courseLabel = r.courseName ? `${escapeHtml(r.courseName)} · ${r.holes || (r.pars ? r.pars.length : 18)}` : '';
+      return `
+        <div class="hole" style="grid-template-columns: 1fr auto auto;">
+          <div>
+            <div class="hole-num" style="font-size:14px;">${label}</div>
+            <div class="hole-par">${courseLabel ? courseLabel + ' · ' : ''}thru ${r.thru}</div>
+          </div>
+          <div style="font-size:20px; font-weight:600;">${r.total}</div>
+          <div class="label ${toParCls}" style="min-width:36px;">${toParStr}</div>
+          <button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete</button>
+        </div>
+      `;
+    }).join('');
+    historyViewEl.querySelectorAll('button[data-del]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('Delete this round?')) return;
+        const idx = parseInt(b.dataset.del, 10);
+        const hh = loadHistory();
+        hh.splice(idx, 1);
+        saveHistory(hh);
+        renderHistory();
+      });
+    });
+  }
+
   document.getElementById('history').addEventListener('click', () => {
     if (historyViewEl.style.display === 'block') {
       historyViewEl.style.display = 'none';
       return;
     }
-    const h = loadHistory();
-    if (h.length === 0) {
-      historyViewEl.innerHTML = '<div style="text-align:center; color:#8e8e93; font-size:14px; padding:16px;">No saved rounds yet.</div>';
-    } else {
-      historyViewEl.innerHTML = h.map((r, idx) => {
-        const dd = new Date(r.date);
-        const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        const toParStr = r.toPar === 0 ? 'E' : (r.toPar > 0 ? '+' + r.toPar : String(r.toPar));
-        const toParCls = r.toPar > 0 ? 'over' : (r.toPar < 0 ? 'under' : 'par');
-        return `
-          <div class="hole" style="grid-template-columns: 1fr auto auto;">
-            <div>
-              <div class="hole-num" style="font-size:14px;">${label}</div>
-              <div class="hole-par">thru ${r.thru}</div>
-            </div>
-            <div style="font-size:20px; font-weight:600;">${r.total}</div>
-            <div class="label ${toParCls}" style="min-width:36px;">${toParStr}</div>
-            <button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete</button>
-          </div>
-        `;
-      }).join('');
-      historyViewEl.querySelectorAll('button[data-del]').forEach(b => {
-        b.addEventListener('click', () => {
-          if (!confirm('Delete this round?')) return;
-          const idx = parseInt(b.dataset.del);
-          const hh = loadHistory();
-          hh.splice(idx, 1);
-          saveHistory(hh);
-          document.getElementById('history').click();
-          document.getElementById('history').click();
-        });
-      });
-    }
+    renderHistory();
     historyViewEl.style.display = 'block';
   });
 
   render();
 
-  // Register service worker for offline support
+  // Service worker for offline support
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
