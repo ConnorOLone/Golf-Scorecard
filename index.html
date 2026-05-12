@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scorecard">
+<meta name="theme-color" content="#0f6e56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Scorecard</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    background: #f5f5f7;
+    color: #1c1c1e;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 12px 16px 24px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.4px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: #0f6e56;
+    color: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .summary-item { text-align: center; }
+  .summary-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  .summary-value {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .summary-value.danger { color: #ffb4a8; }
+  .summary-value.info { color: #a8e6cf; }
+
+  details.par-config {
+    background: white;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border: 0.5px solid rgba(0,0,0,0.1);
+  }
+  details.par-config summary {
+    font-size: 13px;
+    color: #6b6b70;
+    cursor: pointer;
+    padding: 4px 0;
+    list-style: none;
+  }
+  details.par-config summary::-webkit-details-marker { display: none; }
+  details.par-config summary::after { content: "›"; float: right; transition: transform 0.2s; }
+  details.par-config[open] summary::after { transform: rotate(90deg); }
+  .par-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .par-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+  }
+  .par-cell span { color: #6b6b70; width: 28px; }
+  .par-cell select {
+    flex: 1;
+    height: 32px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 6px;
+    background: #f5f5f7;
+    font-size: 13px;
+    padding: 0 6px;
+  }
+
+  .holes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hole {
+    display: grid;
+    grid-template-columns: 56px 1fr 60px;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .hole-num {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .hole-par {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-top: 2px;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stepper button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #f2f2f7;
+    color: #1c1c1e;
+    font-size: 22px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.05s;
+    flex-shrink: 0;
+  }
+  .stepper button:active {
+    background: #d1d1d6;
+    transform: scale(0.94);
+  }
+  .stepper .score {
+    flex: 1;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    min-width: 32px;
+    letter-spacing: -0.5px;
+  }
+  .score.empty { color: #c7c7cc; font-weight: 400; }
+  .label {
+    font-size: 11px;
+    text-align: right;
+    font-weight: 500;
+    text-transform: lowercase;
+  }
+  .label.par { color: #8e8e93; }
+  .label.under { color: #0f6e56; }
+  .label.bogey { color: #c47200; }
+  .label.over { color: #d23f3f; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .btn {
+    flex: 1;
+    height: 44px;
+    border-radius: 12px;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    background: white;
+    color: #1c1c1e;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:active { background: #f2f2f7; }
+  .btn.danger { color: #d23f3f; }
+
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #000; color: #f5f5f7; }
+    .hole, details.par-config, .btn { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+    .stepper button { background: #2c2c2e; color: #f5f5f7; }
+    .stepper button:active { background: #3a3a3c; }
+    .par-cell select { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
+    .hole-par, .par-cell span, details.par-config summary { color: #8e8e93; }
+    .score.empty { color: #48484a; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Scorecard</h1>
+    <div style="font-size: 13px; color: #8e8e93;" id="date"></div>
+  </header>
+
+  <div class="summary">
+    <div class="summary-item">
+      <div class="summary-label">Total</div>
+      <div class="summary-value" id="total">0</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">To par</div>
+      <div class="summary-value" id="toPar">E</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">Thru</div>
+      <div class="summary-value" id="thru">0</div>
+    </div>
+  </div>
+
+  <details class="par-config">
+    <summary>Set par per hole</summary>
+    <div class="par-grid" id="parConfig"></div>
+  </details>
+
+  <div class="holes" id="holes"></div>
+
+  <div class="actions">
+    <button class="btn" id="save">Save round</button>
+    <button class="btn" id="history">History</button>
+    <button class="btn danger" id="reset">Reset</button>
+  </div>
+
+  <div id="historyView" style="display:none; margin-top: 16px;"></div>
+</div>
+
+<script>
+(function() {
+  const HOLES = 18;
+  const STORAGE_KEY = 'golf_round_v1';
+  const defaultPars = [4,4,3,5,4,4,3,4,5,4,4,3,5,4,4,3,4,5];
+
+  let state = { scores: Array(HOLES).fill(null), pars: defaultPars.slice(), date: Date.now() };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (saved && saved.scores && saved.pars) state = Object.assign(state, saved);
+  } catch(e) {}
+
+  const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} };
+
+  // Format date
+  const d = new Date(state.date);
+  document.getElementById('date').textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  const holesEl = document.getElementById('holes');
+  const parConfigEl = document.getElementById('parConfig');
+
+  function labelFor(score, par) {
+    if (score == null) return { text: '', cls: '' };
+    const diff = score - par;
+    if (diff === 0) return { text: 'par', cls: 'par' };
+    if (diff === -1) return { text: 'birdie', cls: 'under' };
+    if (diff === -2) return { text: 'eagle', cls: 'under' };
+    if (diff <= -3) return { text: 'albatross', cls: 'under' };
+    if (diff === 1) return { text: 'bogey', cls: 'bogey' };
+    if (diff === 2) return { text: 'double', cls: 'over' };
+    if (diff === 3) return { text: 'triple', cls: 'over' };
+    return { text: '+' + diff, cls: 'over' };
+  }
+
+  function render() {
+    holesEl.innerHTML = '';
+    for (let i = 0; i < HOLES; i++) {
+      const par = state.pars[i];
+      const score = state.scores[i];
+      const lbl = labelFor(score, par);
+
+      const row = document.createElement('div');
+      row.className = 'hole';
+      row.innerHTML = `
+        <div>
+          <div class="hole-num">${i + 1}</div>
+          <div class="hole-par">par ${par}</div>
+        </div>
+        <div class="stepper">
+          <button data-hole="${i}" data-action="dec" aria-label="Decrease score">−</button>
+          <div class="score ${score == null ? 'empty' : ''}">${score == null ? '–' : score}</div>
+          <button data-hole="${i}" data-action="inc" aria-label="Increase score">+</button>
+        </div>
+        <div class="label ${lbl.cls}">${lbl.text}</div>
+      `;
+      holesEl.appendChild(row);
+    }
+
+    parConfigEl.innerHTML = '';
+    for (let i = 0; i < HOLES; i++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'par-cell';
+      wrap.innerHTML = `
+        <span>H${i+1}</span>
+        <select data-par-hole="${i}">
+          <option value="3" ${state.pars[i]===3?'selected':''}>3</option>
+          <option value="4" ${state.pars[i]===4?'selected':''}>4</option>
+          <option value="5" ${state.pars[i]===5?'selected':''}>5</option>
+        </select>
+      `;
+      parConfigEl.appendChild(wrap);
+    }
+
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const played = state.scores.filter(s => s != null);
+    const total = played.reduce((a,b) => a + b, 0);
+    const parTotal = state.scores.reduce((acc, s, i) => s == null ? acc : acc + state.pars[i], 0);
+    const diff = total - parTotal;
+
+    document.getElementById('total').textContent = total;
+    document.getElementById('thru').textContent = played.length;
+    const toParEl = document.getElementById('toPar');
+    toParEl.classList.remove('danger', 'info');
+    if (played.length === 0 || diff === 0) {
+      toParEl.textContent = 'E';
+    } else if (diff > 0) {
+      toParEl.textContent = '+' + diff;
+      toParEl.classList.add('danger');
+    } else {
+      toParEl.textContent = String(diff);
+      toParEl.classList.add('info');
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-hole]');
+    if (!btn) return;
+    const i = parseInt(btn.dataset.hole);
+    const action = btn.dataset.action;
+    const current = state.scores[i];
+    if (action === 'inc') {
+      state.scores[i] = current == null ? state.pars[i] : Math.min(current + 1, 15);
+    } else {
+      if (current == null) return;
+      state.scores[i] = current - 1;
+      if (state.scores[i] < 1) state.scores[i] = null;
+    }
+    save();
+    render();
+    // Haptic-ish feedback via vibration where supported
+    if (navigator.vibrate) navigator.vibrate(5);
+  });
+
+  document.addEventListener('change', (e) => {
+    const sel = e.target.closest('select[data-par-hole]');
+    if (!sel) return;
+    const i = parseInt(sel.dataset.parHole);
+    state.pars[i] = parseInt(sel.value);
+    save();
+    render();
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    if (!confirm('Reset round? All scores will be cleared.')) return;
+    state.scores = Array(HOLES).fill(null);
+    state.date = Date.now();
+    const dd = new Date(state.date);
+    document.getElementById('date').textContent = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    save();
+    render();
+  });
+
+  // History: list of completed rounds
+  const HISTORY_KEY = 'golf_history_v1';
+  const loadHistory = () => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+  };
+  const saveHistory = (h) => {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch(e) {}
+  };
+
+  document.getElementById('save').addEventListener('click', () => {
+    const played = state.scores.filter(s => s != null);
+    if (played.length === 0) { alert('No scores to save yet.'); return; }
+    const total = played.reduce((a,b) => a+b, 0);
+    const parTotal = state.scores.reduce((acc, s, i) => s == null ? acc : acc + state.pars[i], 0);
+    const round = {
+      date: state.date,
+      scores: state.scores.slice(),
+      pars: state.pars.slice(),
+      total,
+      toPar: total - parTotal,
+      thru: played.length
+    };
+    const h = loadHistory();
+    h.unshift(round);
+    saveHistory(h);
+    if (confirm('Round saved. Start a new round?')) {
+      state.scores = Array(HOLES).fill(null);
+      state.date = Date.now();
+      const dd = new Date(state.date);
+      document.getElementById('date').textContent = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      save();
+      render();
+    }
+  });
+
+  const historyViewEl = document.getElementById('historyView');
+  document.getElementById('history').addEventListener('click', () => {
+    if (historyViewEl.style.display === 'block') {
+      historyViewEl.style.display = 'none';
+      return;
+    }
+    const h = loadHistory();
+    if (h.length === 0) {
+      historyViewEl.innerHTML = '<div style="text-align:center; color:#8e8e93; font-size:14px; padding:16px;">No saved rounds yet.</div>';
+    } else {
+      historyViewEl.innerHTML = h.map((r, idx) => {
+        const dd = new Date(r.date);
+        const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const toParStr = r.toPar === 0 ? 'E' : (r.toPar > 0 ? '+' + r.toPar : String(r.toPar));
+        const toParCls = r.toPar > 0 ? 'over' : (r.toPar < 0 ? 'under' : 'par');
+        return `
+          <div class="hole" style="grid-template-columns: 1fr auto auto;">
+            <div>
+              <div class="hole-num" style="font-size:14px;">${label}</div>
+              <div class="hole-par">thru ${r.thru}</div>
+            </div>
+            <div style="font-size:20px; font-weight:600;">${r.total}</div>
+            <div class="label ${toParCls}" style="min-width:36px;">${toParStr}</div>
+            <button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete</button>
+          </div>
+        `;
+      }).join('');
+      historyViewEl.querySelectorAll('button[data-del]').forEach(b => {
+        b.addEventListener('click', () => {
+          if (!confirm('Delete this round?')) return;
+          const idx = parseInt(b.dataset.del);
+          const hh = loadHistory();
+          hh.splice(idx, 1);
+          saveHistory(hh);
+          document.getElementById('history').click();
+          document.getElementById('history').click();
+        });
+      });
+    }
+    historyViewEl.style.display = 'block';
+  });
+
+  render();
+
+  // Register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
