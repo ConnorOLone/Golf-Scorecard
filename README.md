@@ -2,8 +2,6 @@
 
 Self-contained golf scorecard. Works offline once installed (Web-App).
 
-## Deployed to GitHub Pages - https://ConnorOLone.github.io/scorecard/
-
 ## Features
 - _MINIMAL_ & Easy to use score tracking!
 - _ADD_ and _SAVE_ Courses
