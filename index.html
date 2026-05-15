@@ -682,6 +682,28 @@
     margin-top: -4px;
   }
 
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f6e56;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
     .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
@@ -720,6 +742,9 @@
     .btn.active { background: #f5f5f7; color: #1c1c1e; }
     .reset-link { color: #8e8e93; }
     .reset-link:active { color: #ff9080; background: rgba(255, 144, 128, 0.1); }
+    .toast {
+      background: #0f6e56;
+    }
   }
 </style>
 </head>
@@ -798,6 +823,8 @@
 
   <div id="historyView" style="display:none; margin-top: 16px;"></div>
 </div>
+
+<div id="toast" class="toast"></div>
 
 <div class="modal-backdrop" id="scoreModal" hidden>
   <div class="modal" role="dialog" aria-modal="true">
@@ -1002,6 +1029,15 @@
     showModal({ title, message, okText, text: { value: defaultValue, placeholder } }).then(r => r ? r.text : null);
   const alertDialog = (message, { title = '' } = {}) =>
     showModal({ title, message, cancelText: null });
+
+  function showToast(message, duration = 2000) {
+    const toastEl = document.getElementById('toast');
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, duration);
+  }
 
   function labelFor(score, par) {
     if (score == null) return { text: '', cls: '' };
