@@ -744,6 +744,7 @@
     .reset-link:active { color: #ff9080; background: rgba(255, 144, 128, 0.1); }
     .toast {
       background: #0f6e56;
+      color: #f5f5f7;
     }
   }
 </style>
@@ -1030,11 +1031,14 @@
   const alertDialog = (message, { title = '' } = {}) =>
     showModal({ title, message, cancelText: null });
 
+  let toastTimeout;
+
   function showToast(message, duration = 2000) {
     const toastEl = document.getElementById('toast');
+    clearTimeout(toastTimeout);
     toastEl.textContent = message;
     toastEl.classList.add('show');
-    setTimeout(() => {
+    toastTimeout = setTimeout(() => {
       toastEl.classList.remove('show');
     }, duration);
   }
