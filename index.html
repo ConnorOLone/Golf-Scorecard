@@ -1600,6 +1600,18 @@
     }
   });
 
+  document.getElementById('newRoundBtn').addEventListener('click', () => {
+    if (roundSaved) {
+      // Round already saved, start new immediately
+      round = newRound(currentId);
+      saveRound();
+      render();
+    } else {
+      // Round has unsaved changes, show confirmation dialog
+      showConfirmRoundDialog('new');
+    }
+  });
+
   const historyViewEl = document.getElementById('historyView');
   const expandedHistory = new Set();
 
