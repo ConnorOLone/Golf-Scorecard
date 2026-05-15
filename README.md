@@ -1,4 +1,4 @@
-# Scorecard PWA
+# Golf-Scorecard 
 
 Self-contained golf scorecard. Works offline once installed (Web-App).
 
