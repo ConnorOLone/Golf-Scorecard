@@ -1072,6 +1072,119 @@
     return `${y}-${m}-${day}`;
   }
 
+  // --- Confirmation dialog state ---
+  let pendingRoundAction = null; // 'new' or 'switch'
+  let pendingCourseId = null; // courseId to switch to, if action is 'switch'
+
+  function showConfirmRoundDialog(action, courseIdOrDate = null) {
+    const title = document.getElementById('confirmRoundTitle');
+    const message = document.getElementById('confirmRoundMessage');
+    const saveBtn = document.getElementById('confirmRoundSaveBtn');
+    const discardBtn = document.getElementById('confirmRoundDiscardBtn');
+    const modal = document.getElementById('confirmRoundModal');
+
+    const roundDate = new Date(round.date).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric'
+    });
+
+    pendingRoundAction = action;
+
+    if (action === 'new') {
+      title.textContent = `Save round from ${roundDate} before starting new?`;
+      message.textContent = '';
+      saveBtn.textContent = 'Save & New';
+      discardBtn.textContent = 'Discard & New';
+    } else if (action === 'switch') {
+      pendingCourseId = courseIdOrDate;
+      title.textContent = `Save round from ${roundDate} before switching?`;
+      message.textContent = '';
+      saveBtn.textContent = 'Save & Switch';
+      discardBtn.textContent = 'Discard & Switch';
+    }
+
+    modal.classList.add('active');
+  }
+
+  // --- Save button handler ---
+  document.getElementById('confirmRoundSaveBtn').addEventListener('click', async () => {
+    const action = pendingRoundAction;
+    const courseId = pendingCourseId;
+
+    // Close dialog
+    document.getElementById('confirmRoundModal').classList.remove('active');
+
+    // Save the current round
+    const c = currentCourse();
+    const played = round.scores.filter(s => s != null);
+
+    if (played.length === 0) {
+      await alertDialog('No scores to save yet.');
+      return;
+    }
+
+    const total = played.reduce((a, b) => a + b, 0);
+    const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
+    const entry = {
+      date: round.date,
+      courseId: c.id,
+      courseName: c.name,
+      holes: c.holes,
+      scores: round.scores.slice(),
+      pars: c.pars.slice(),
+      total,
+      toPar: total - parTotal,
+      thru: played.length
+    };
+
+    const h = loadHistory();
+    h.unshift(entry);
+    saveHistory(h);
+    markRoundSaved();
+    showToast('Round saved');
+
+    // Proceed with the action
+    if (action === 'new') {
+      round = newRound(currentId);
+      saveRound();
+      render();
+    } else if (action === 'switch') {
+      currentId = courseId;
+      saveCourses();
+      round = newRound(currentId);
+      saveRound();
+      render();
+    }
+  });
+
+  // --- Discard button handler ---
+  document.getElementById('confirmRoundDiscardBtn').addEventListener('click', () => {
+    const action = pendingRoundAction;
+    const courseId = pendingCourseId;
+
+    // Close dialog
+    document.getElementById('confirmRoundModal').classList.remove('active');
+    showToast('Round discarded');
+
+    // Proceed with the action
+    if (action === 'new') {
+      round = newRound(currentId);
+      saveRound();
+      render();
+    } else if (action === 'switch') {
+      currentId = courseId;
+      saveCourses();
+      round = newRound(currentId);
+      saveRound();
+      render();
+    }
+  });
+
+  // --- Cancel button handler ---
+  document.getElementById('confirmRoundCancelBtn').addEventListener('click', () => {
+    document.getElementById('confirmRoundModal').classList.remove('active');
+  });
+
   dateBtn.addEventListener('click', () => {
     dateInput.value = isoLocal(round.date);
     if (typeof dateInput.showPicker === 'function') {
