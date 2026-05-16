@@ -1103,7 +1103,7 @@
       discardBtn.textContent = 'Discard & Switch';
     }
 
-    modal.classList.add('active');
+    modal.hidden = false;
   }
 
   // --- Save button handler ---
@@ -1112,7 +1112,7 @@
     const courseId = pendingCourseId;
 
     // Close dialog
-    document.getElementById('confirmRoundModal').classList.remove('active');
+    document.getElementById('confirmRoundModal').hidden = true;
 
     // Save the current round
     const c = currentCourse();
@@ -1163,7 +1163,7 @@
     const courseId = pendingCourseId;
 
     // Close dialog
-    document.getElementById('confirmRoundModal').classList.remove('active');
+    document.getElementById('confirmRoundModal').hidden = true;
     showToast('Round discarded');
 
     // Proceed with the action
@@ -1182,7 +1182,7 @@
 
   // --- Cancel button handler ---
   document.getElementById('confirmRoundCancelBtn').addEventListener('click', () => {
-    document.getElementById('confirmRoundModal').classList.remove('active');
+    document.getElementById('confirmRoundModal').hidden = true;
   });
 
   dateBtn.addEventListener('click', () => {
