@@ -1126,6 +1126,7 @@
     const total = played.reduce((a, b) => a + b, 0);
     const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const entry = {
+      id: uid(),
       date: round.date,
       courseId: c.id,
       courseName: c.name,
@@ -1139,7 +1140,10 @@
 
     const h = loadHistory();
     h.unshift(entry);
-    saveHistory(h);
+    if (!saveHistory(h)) {
+      await alertDialog('Could not save — device storage is full. Delete old rounds or export a backup, then try again.', { title: 'Save failed' });
+      return;
+    }
     markRoundSaved();
     showToast('Round saved');
 
@@ -1469,11 +1473,6 @@
     const cancel = () => cleanup();
     const onKey = (e) => {
       if (e.key === 'Escape') cancel();
-      else if (/^\d$/.test(e.key)) {
-        // Build multi-digit input via simple buffer.
-        const v = parseInt(e.key, 10);
-        if (v >= 1) choose(v);
-      }
     };
 
     scoreKeypadEl.onclick = (e) => {
@@ -1675,10 +1674,18 @@
 
   // --- History ---
   const loadHistory = () => {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+    let h;
+    try { h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+    if (!Array.isArray(h)) return [];
+    let backfilled = false;
+    for (const r of h) {
+      if (r && typeof r === 'object' && !r.id) { r.id = uid(); backfilled = true; }
+    }
+    if (backfilled) saveHistory(h);
+    return h;
   };
   const saveHistory = (h) => {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch(e) {}
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); return true; } catch(e) { return false; }
   };
 
   document.getElementById('save').addEventListener('click', async () => {
@@ -1688,6 +1695,7 @@
     const total = played.reduce((a,b) => a+b, 0);
     const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const entry = {
+      id: uid(),
       date: round.date,
       courseId: c.id,
       courseName: c.name,
@@ -1700,7 +1708,10 @@
     };
     const h = loadHistory();
     h.unshift(entry);
-    saveHistory(h);
+    if (!saveHistory(h)) {
+      await alertDialog('Could not save — device storage is full. Delete old rounds or export a backup, then try again.', { title: 'Save failed' });
+      return;
+    }
     markRoundSaved();
     const startNew = await confirmDialog('Round saved. Start a new round?', { okText: 'New round' });
     if (startNew) {
@@ -1887,15 +1898,15 @@
       return;
     }
     const stats = statsHTML(h);
-    historyViewEl.innerHTML = stats + h.map((r, idx) => {
+    historyViewEl.innerHTML = stats + h.map((r) => {
       const dd = new Date(r.date);
       const label = dd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       const toParStr = diffStr(r.toPar);
       const toParCls = r.toPar > 0 ? 'over' : (r.toPar < 0 ? 'under' : 'par');
       const courseLabel = r.courseName ? `${escapeHtml(r.courseName)} · ${r.holes || (r.pars ? r.pars.length : 18)}` : '';
-      const expanded = expandedHistory.has(idx);
+      const expanded = expandedHistory.has(r.id);
       return `
-        <div class="hole history-row" data-idx="${idx}" style="grid-template-columns: 1fr auto auto;">
+        <div class="hole history-row" data-id="${r.id}" style="grid-template-columns: 1fr auto auto;">
           <div>
             <div class="hole-num" style="font-size:14px;">${label}</div>
             <div class="hole-par">${courseLabel ? courseLabel + ' · ' : ''}thru ${r.thru}</div>
@@ -1903,7 +1914,7 @@
           <div style="font-size:20px; font-weight:600;">${r.total}</div>
           <div class="label ${toParCls}" style="min-width:36px;">${toParStr}</div>
           ${expanded ? historyDetailHTML(r) : ''}
-          ${expanded ? `<button class="btn danger" data-del="${idx}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete round</button>` : ''}
+          ${expanded ? `<button class="btn danger" data-del="${r.id}" style="grid-column: 1 / -1; height:32px; font-size:12px; margin-top:6px;">Delete round</button>` : ''}
         </div>
       `;
     }).join('');
@@ -1911,9 +1922,9 @@
     historyViewEl.querySelectorAll('.history-row').forEach(row => {
       row.addEventListener('click', (e) => {
         if (e.target.closest('button[data-del]')) return;
-        const idx = parseInt(row.dataset.idx, 10);
-        if (expandedHistory.has(idx)) expandedHistory.delete(idx);
-        else expandedHistory.add(idx);
+        const id = row.dataset.id;
+        if (expandedHistory.has(id)) expandedHistory.delete(id);
+        else expandedHistory.add(id);
         renderHistory();
       });
     });
@@ -1923,11 +1934,12 @@
         e.stopPropagation();
         const ok = await confirmDialog('Delete this round?', { okText: 'Delete', destructive: true });
         if (!ok) return;
-        const idx = parseInt(b.dataset.del, 10);
+        const id = b.dataset.del;
         const hh = loadHistory();
-        hh.splice(idx, 1);
+        const i = hh.findIndex(r => r.id === id);
+        if (i >= 0) hh.splice(i, 1);
         saveHistory(hh);
-        expandedHistory.clear();
+        expandedHistory.delete(id);
         renderHistory();
       });
     });
