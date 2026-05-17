@@ -869,6 +869,7 @@
       <div class="par-grid" id="parConfig"></div>
       <div class="panel-buttons">
         <button id="newCourse">New</button>
+        <button id="editCourse">Edit</button>
         <button id="duplicateCourse">Duplicate</button>
         <button id="deleteCourse" class="danger">Delete</button>
       </div>
@@ -1819,18 +1820,43 @@
       courseFormName.focus();
       return;
     }
-    const hasScores = round.scores.some(s => s != null);
-    if (hasScores && !roundSaved) {
-      const ok = await confirmDialog('Adding a course will clear the current round. Continue?', { okText: 'Add course', destructive: true });
-      if (!ok) return;
+    if (courseFormMode === 'add') {
+      const hasScores = round.scores.some(s => s != null);
+      if (hasScores && !roundSaved) {
+        const ok = await confirmDialog('Adding a course will clear the current round. Continue?', { okText: 'Add course', destructive: true });
+        if (!ok) return;
+      }
+      const c = { id: uid(), name, holes: courseFormDraft.holes, pars: courseFormDraft.pars.slice() };
+      courses.push(c);
+      currentId = c.id;
+      saveCourses();
+      round = newRound(currentId);
+      saveRound();
+      markRoundDirty();
+      closeCourseForm(true);
+      render();
+      return;
     }
-    const c = { id: uid(), name, holes: courseFormDraft.holes, pars: courseFormDraft.pars.slice() };
-    courses.push(c);
-    currentId = c.id;
+    const c = courses.find(x => x.id === courseFormEditId);
+    if (!c) { closeCourseForm(true); return; }
+    const holesChanged = c.holes !== courseFormDraft.holes;
+    const affectsRound = holesChanged && c.id === currentId;
+    if (affectsRound) {
+      const hasScores = round.scores.some(s => s != null);
+      if (hasScores && !roundSaved) {
+        const ok = await confirmDialog('Changing hole count will clear the in-progress round. Continue?', { okText: 'Change', destructive: true });
+        if (!ok) return;
+      }
+    }
+    c.name = name;
+    c.holes = courseFormDraft.holes;
+    c.pars = courseFormDraft.pars.slice();
     saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
+    if (affectsRound) {
+      round = newRound(currentId);
+      saveRound();
+      markRoundDirty();
+    }
     closeCourseForm(true);
     render();
   }
@@ -1863,6 +1889,7 @@
 
   document.getElementById('courseFormSave').addEventListener('click', saveCourseForm);
   document.getElementById('courseFormCancel').addEventListener('click', () => closeCourseForm(false));
+  document.getElementById('editCourse').addEventListener('click', () => openCourseForm('edit', currentId));
 
   // --- Reset round ---
   document.getElementById('reset').addEventListener('click', async () => {
