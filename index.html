@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Scorecard">
@@ -1561,13 +1561,13 @@
   });
 
   // --- Course switching ---
-  courseSelect.addEventListener('change', async () => {
+  courseSelect.addEventListener('change', () => {
     const newId = courseSelect.value;
     if (newId === currentId) return;
-    const hasScores = round.scores.some(s => s != null);
-    if (hasScores) {
-      const ok = await confirmDialog('Switching courses will clear the current scores. Continue?', { okText: 'Switch', destructive: true });
-      if (!ok) { courseSelect.value = currentId; return; }
+    if (round.scores.some(s => s != null) && !roundSaved) {
+      courseSelect.value = currentId;
+      showConfirmRoundDialog('switch', newId);
+      return;
     }
     currentId = newId;
     saveCourses();
