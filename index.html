@@ -1619,17 +1619,12 @@
 
   // --- New / duplicate / delete ---
   document.getElementById('newCourse').addEventListener('click', async () => {
-    const result = await showModal({
-      title: 'New course',
-      text: { value: 'New Course', placeholder: 'Course name' },
-      select: { value: '18', options: [{ value: '18', label: '18 holes' }, { value: '9', label: '9 holes' }] },
-      okText: 'Create'
-    });
-    if (!result) return;
-    const name = (result.text || '').trim();
-    if (!name) return;
-    const holes = result.select === '9' ? 9 : 18;
-    const c = { id: uid(), name, holes, pars: defaultPars(holes) };
+    const hasScores = round.scores.some(s => s != null);
+    if (hasScores) {
+      const ok = await confirmDialog('Starting a new course will clear the current scores. Continue?', { okText: 'New course', destructive: true });
+      if (!ok) return;
+    }
+    const c = { id: uid(), name: 'New Course', holes: 18, pars: defaultPars(18) };
     courses.push(c);
     currentId = c.id;
     saveCourses();
@@ -1637,6 +1632,9 @@
     saveRound();
     markRoundDirty();
     render();
+    document.getElementById('coursePanel').open = true;
+    courseNameIn.focus();
+    courseNameIn.select();
   });
 
   document.getElementById('duplicateCourse').addEventListener('click', () => {
