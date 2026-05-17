@@ -248,6 +248,12 @@
   }
   .panel-buttons button:active { background: #f2f2f7; }
   .panel-buttons button.danger { color: #d23f3f; }
+  .panel-buttons button.primary {
+    background: #0f6e56;
+    color: white;
+    border-color: transparent;
+  }
+  .panel-buttons button.primary:active { background: #0c5a47; }
   .storage-status {
     font-size: 12px;
     color: #6b6b70;
@@ -855,22 +861,11 @@
         <label>Course</label>
         <select id="courseSelect"></select>
       </div>
-      <div class="panel-row">
-        <label>Name</label>
-        <input type="text" id="courseNameInput" placeholder="Course name" autocomplete="off" autocapitalize="words">
-      </div>
-      <div class="panel-row">
-        <label>Holes</label>
-        <div class="segmented" id="holesToggle">
-          <button data-holes="9">9</button>
-          <button data-holes="18">18</button>
-        </div>
-      </div>
-      <div class="par-grid" id="parConfig"></div>
       <div class="panel-buttons">
-        <button id="newCourse">New</button>
+        <button id="newCourse" class="primary">+ Add course</button>
+      </div>
+      <div class="panel-buttons">
         <button id="editCourse">Edit</button>
-        <button id="duplicateCourse">Duplicate</button>
         <button id="deleteCourse" class="danger">Delete</button>
       </div>
     </div>
@@ -1051,10 +1046,7 @@
 
   // --- DOM refs ---
   const holesEl       = document.getElementById('holes');
-  const parConfigEl   = document.getElementById('parConfig');
   const courseSelect  = document.getElementById('courseSelect');
-  const courseNameIn  = document.getElementById('courseNameInput');
-  const holesToggle   = document.getElementById('holesToggle');
   const courseNameEl  = document.getElementById('courseName');
   const dateBtn       = document.getElementById('dateBtn');
   const dateInput     = document.getElementById('dateInput');
@@ -1306,36 +1298,9 @@
   });
 
   function renderCoursePanel() {
-    const c = currentCourse();
-    // Course dropdown
     courseSelect.innerHTML = courses.map(co =>
       `<option value="${co.id}" ${co.id === currentId ? 'selected' : ''}>${escapeHtml(co.name)} · ${co.holes}</option>`
     ).join('');
-
-    // Name input
-    courseNameIn.value = c.name;
-
-    // 9/18 segmented
-    holesToggle.querySelectorAll('button').forEach(b => {
-      b.classList.toggle('active', parseInt(b.dataset.holes, 10) === c.holes);
-    });
-
-    // Par grid
-    parConfigEl.innerHTML = '';
-    for (let i = 0; i < c.holes; i++) {
-      const wrap = document.createElement('div');
-      wrap.className = 'par-cell';
-      wrap.innerHTML = `
-        <span>H${i+1}</span>
-        <select data-par-hole="${i}">
-          <option value="3" ${c.pars[i]===3?'selected':''}>3</option>
-          <option value="4" ${c.pars[i]===4?'selected':''}>4</option>
-          <option value="5" ${c.pars[i]===5?'selected':''}>5</option>
-          <option value="6" ${c.pars[i]===6?'selected':''}>6</option>
-        </select>
-      `;
-      parConfigEl.appendChild(wrap);
-    }
   }
 
   function nextUnfilledIndex() {
@@ -1645,18 +1610,6 @@
     openScoreKeypad(parseInt(s.dataset.scoreHole, 10));
   });
 
-  // --- Par select ---
-  parConfigEl.addEventListener('change', (e) => {
-    const sel = e.target.closest('select[data-par-hole]');
-    if (!sel) return;
-    const i = parseInt(sel.dataset.parHole, 10);
-    currentCourse().pars[i] = parseInt(sel.value, 10);
-    saveCourses();
-    renderHeader();
-    renderHoles();
-    updateSummary();
-  });
-
   // --- Course switching ---
   courseSelect.addEventListener('change', () => {
     const newId = courseSelect.value;
@@ -1674,59 +1627,8 @@
     render();
   });
 
-  // --- Course rename ---
-  courseNameIn.addEventListener('input', () => {
-    const v = courseNameIn.value.trim() || 'Untitled';
-    currentCourse().name = v;
-    saveCourses();
-    courseNameEl.textContent = v;
-    // Update the dropdown option label without rebuilding everything
-    const opt = courseSelect.querySelector(`option[value="${currentId}"]`);
-    if (opt) opt.textContent = `${v} · ${currentCourse().holes}`;
-  });
-
-  // --- 9 / 18 toggle ---
-  holesToggle.addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-holes]');
-    if (!b) return;
-    const newHoles = parseInt(b.dataset.holes, 10);
-    const c = currentCourse();
-    if (c.holes === newHoles) return;
-    const hasScores = round.scores.some(s => s != null);
-    if (hasScores) {
-      const ok = await confirmDialog('Changing hole count will clear the current scores. Continue?', { okText: 'Change', destructive: true });
-      if (!ok) return;
-    }
-
-    if (newHoles > c.holes) {
-      // Extend pars with defaults
-      const filler = defaultPars(18).slice(c.holes, newHoles);
-      c.pars = c.pars.concat(filler);
-    } else {
-      c.pars = c.pars.slice(0, newHoles);
-    }
-    c.holes = newHoles;
-    saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
-    render();
-  });
-
-  // --- New / duplicate / delete ---
+  // --- Add / delete course ---
   document.getElementById('newCourse').addEventListener('click', () => openCourseForm('add'));
-
-  document.getElementById('duplicateCourse').addEventListener('click', () => {
-    const src = currentCourse();
-    const c = { id: uid(), name: src.name + ' copy', holes: src.holes, pars: src.pars.slice() };
-    courses.push(c);
-    currentId = c.id;
-    saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
-    render();
-  });
 
   document.getElementById('deleteCourse').addEventListener('click', async () => {
     if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
