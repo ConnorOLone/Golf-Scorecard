@@ -704,6 +704,77 @@
     pointer-events: auto;
   }
 
+  /* Course form page */
+  .course-form-view {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: #f5f5f7;
+    display: flex;
+    flex-direction: column;
+  }
+  .course-form-view[hidden] { display: none; }
+  .course-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #0f6e56;
+    color: white;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  }
+  .course-form-header button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .course-form-header .cf-save { font-weight: 600; }
+  .course-form-title { font-size: 16px; font-weight: 600; }
+  .course-form-body {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 16px calc(env(safe-area-inset-bottom) + 24px);
+  }
+  .cf-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8e8e93;
+    margin: 16px 0 5px;
+  }
+  .cf-label:first-child { margin-top: 0; }
+  .cf-name {
+    width: 100%;
+    height: 40px;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    background: white;
+    color: inherit;
+    font-family: inherit;
+    font-size: 15px;
+    padding: 0 12px;
+  }
+  .cf-hint {
+    font-size: 12px;
+    color: #d23f3f;
+    min-height: 15px;
+    margin-top: 6px;
+  }
+  .cf-par-total {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b6b70;
+    margin-top: 16px;
+  }
+
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
     .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
@@ -746,6 +817,10 @@
       background: #0f6e56;
       color: #f5f5f7;
     }
+    .course-form-view { background: #000; }
+    .cf-name { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
+    .cf-par-total { color: #8e8e93; }
+    .cf-hint { color: #ff9080; }
   }
 </style>
 </head>
@@ -823,6 +898,27 @@
   </div>
 
   <div id="historyView" style="display:none; margin-top: 16px;"></div>
+</div>
+
+<div class="course-form-view" id="courseFormView" hidden>
+  <div class="course-form-header">
+    <button id="courseFormCancel">Cancel</button>
+    <span class="course-form-title" id="courseFormTitle">New course</span>
+    <button id="courseFormSave" class="cf-save">Save</button>
+  </div>
+  <div class="course-form-body">
+    <div class="cf-label">Name</div>
+    <input type="text" class="cf-name" id="courseFormName" placeholder="Course name" autocomplete="off" autocapitalize="words">
+    <div class="cf-hint" id="courseFormHint"></div>
+    <div class="cf-label">Holes</div>
+    <div class="segmented" id="courseFormHoles">
+      <button data-holes="9">9</button>
+      <button data-holes="18">18</button>
+    </div>
+    <div class="cf-label">Par per hole</div>
+    <div class="par-grid" id="courseFormPars"></div>
+    <div class="cf-par-total" id="courseFormParTotal">Par 72</div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
