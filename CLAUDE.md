@@ -80,4 +80,4 @@ Connor works directly without tests. Trust the browser to validate. If you add f
 - Don't create separate CSS or JS files.
 - Don't use frameworks (React, Vue, etc.).
 - Avoid commenting code. Write clear variable names instead.
-- Keep the file under 2000 lines if possible (already at 1865; be mindful of bloat).
+- Be mindful of bloat — keep additions lean, but there is no hard line-count limit.
