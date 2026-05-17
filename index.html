@@ -1713,24 +1713,7 @@
   });
 
   // --- New / duplicate / delete ---
-  document.getElementById('newCourse').addEventListener('click', async () => {
-    const hasScores = round.scores.some(s => s != null);
-    if (hasScores) {
-      const ok = await confirmDialog('Starting a new course will clear the current scores. Continue?', { okText: 'New course', destructive: true });
-      if (!ok) return;
-    }
-    const c = { id: uid(), name: 'New Course', holes: 18, pars: defaultPars(18) };
-    courses.push(c);
-    currentId = c.id;
-    saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
-    render();
-    document.getElementById('coursePanel').open = true;
-    courseNameIn.focus();
-    courseNameIn.select();
-  });
+  document.getElementById('newCourse').addEventListener('click', () => openCourseForm('add'));
 
   document.getElementById('duplicateCourse').addEventListener('click', () => {
     const src = currentCourse();
@@ -1757,6 +1740,129 @@
     markRoundDirty();
     render();
   });
+
+  // --- Course form page ---
+  const courseFormView     = document.getElementById('courseFormView');
+  const courseFormTitle    = document.getElementById('courseFormTitle');
+  const courseFormName     = document.getElementById('courseFormName');
+  const courseFormHint     = document.getElementById('courseFormHint');
+  const courseFormHoles    = document.getElementById('courseFormHoles');
+  const courseFormPars     = document.getElementById('courseFormPars');
+  const courseFormParTotal = document.getElementById('courseFormParTotal');
+
+  let courseFormMode = null;
+  let courseFormEditId = null;
+  let courseFormDraft = null;
+  let courseFormInitial = null;
+
+  function updateCourseFormParTotal() {
+    courseFormParTotal.textContent = 'Par ' + courseFormDraft.pars.reduce((a, b) => a + b, 0);
+  }
+
+  function renderCourseForm() {
+    courseFormHoles.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.holes, 10) === courseFormDraft.holes);
+    });
+    courseFormPars.innerHTML = '';
+    for (let i = 0; i < courseFormDraft.holes; i++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'par-cell';
+      wrap.innerHTML = `
+        <span>H${i+1}</span>
+        <select data-cf-par="${i}">
+          <option value="3"${courseFormDraft.pars[i]===3?' selected':''}>3</option>
+          <option value="4"${courseFormDraft.pars[i]===4?' selected':''}>4</option>
+          <option value="5"${courseFormDraft.pars[i]===5?' selected':''}>5</option>
+          <option value="6"${courseFormDraft.pars[i]===6?' selected':''}>6</option>
+        </select>
+      `;
+      courseFormPars.appendChild(wrap);
+    }
+    updateCourseFormParTotal();
+  }
+
+  function openCourseForm(mode, courseId) {
+    courseFormMode = mode;
+    if (mode === 'edit') {
+      const c = courses.find(x => x.id === courseId) || currentCourse();
+      courseFormEditId = c.id;
+      courseFormDraft = { name: c.name, holes: c.holes, pars: c.pars.slice() };
+    } else {
+      courseFormEditId = null;
+      courseFormDraft = { name: '', holes: 18, pars: defaultPars(18) };
+    }
+    courseFormInitial = JSON.stringify(courseFormDraft);
+    courseFormTitle.textContent = mode === 'edit' ? 'Edit course' : 'New course';
+    courseFormHint.textContent = '';
+    courseFormName.value = courseFormDraft.name;
+    renderCourseForm();
+    courseFormView.hidden = false;
+    if (mode === 'add') courseFormName.focus();
+  }
+
+  async function closeCourseForm(force) {
+    if (!force && JSON.stringify(courseFormDraft) !== courseFormInitial) {
+      const ok = await confirmDialog('Discard changes?', { okText: 'Discard', destructive: true });
+      if (!ok) return;
+    }
+    courseFormView.hidden = true;
+    courseFormMode = null;
+    courseFormEditId = null;
+    courseFormDraft = null;
+    courseFormInitial = null;
+  }
+
+  async function saveCourseForm() {
+    const name = courseFormDraft.name.trim();
+    if (!name) {
+      courseFormHint.textContent = 'Enter a course name';
+      courseFormName.focus();
+      return;
+    }
+    const hasScores = round.scores.some(s => s != null);
+    if (hasScores && !roundSaved) {
+      const ok = await confirmDialog('Adding a course will clear the current round. Continue?', { okText: 'Add course', destructive: true });
+      if (!ok) return;
+    }
+    const c = { id: uid(), name, holes: courseFormDraft.holes, pars: courseFormDraft.pars.slice() };
+    courses.push(c);
+    currentId = c.id;
+    saveCourses();
+    round = newRound(currentId);
+    saveRound();
+    markRoundDirty();
+    closeCourseForm(true);
+    render();
+  }
+
+  courseFormName.addEventListener('input', () => {
+    courseFormDraft.name = courseFormName.value;
+    if (courseFormName.value.trim()) courseFormHint.textContent = '';
+  });
+
+  courseFormHoles.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-holes]');
+    if (!b) return;
+    const newHoles = parseInt(b.dataset.holes, 10);
+    if (newHoles === courseFormDraft.holes) return;
+    if (newHoles > courseFormDraft.holes) {
+      courseFormDraft.pars = courseFormDraft.pars.concat(defaultPars(18).slice(courseFormDraft.holes, newHoles));
+    } else {
+      courseFormDraft.pars = courseFormDraft.pars.slice(0, newHoles);
+    }
+    courseFormDraft.holes = newHoles;
+    renderCourseForm();
+  });
+
+  courseFormPars.addEventListener('change', (e) => {
+    const sel = e.target.closest('select[data-cf-par]');
+    if (!sel) return;
+    courseFormDraft.pars[parseInt(sel.dataset.cfPar, 10)] = parseInt(sel.value, 10);
+    updateCourseFormParTotal();
+  });
+
+  document.getElementById('courseFormSave').addEventListener('click', saveCourseForm);
+  document.getElementById('courseFormCancel').addEventListener('click', () => closeCourseForm(false));
 
   // --- Reset round ---
   document.getElementById('reset').addEventListener('click', async () => {
