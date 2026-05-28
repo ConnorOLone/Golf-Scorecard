@@ -780,6 +780,24 @@
     color: #6b6b70;
     margin-top: 16px;
   }
+  .cf-delete-row {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .cf-delete-btn {
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    border: 0.5px solid rgba(210, 63, 63, 0.4);
+    color: #d23f3f;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .cf-delete-btn:active { background: rgba(210, 63, 63, 0.08); }
 
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
@@ -827,6 +845,9 @@
     .cf-name { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
     .cf-par-total { color: #8e8e93; }
     .cf-hint { color: #ff9080; }
+    .cf-delete-row { border-top-color: rgba(255,255,255,0.08); }
+    .cf-delete-btn { border-color: rgba(255, 144, 128, 0.5); color: #ff9080; }
+    .cf-delete-btn:active { background: rgba(255, 144, 128, 0.12); }
   }
 </style>
 </head>
@@ -863,10 +884,7 @@
       </div>
       <div class="panel-buttons">
         <button id="newCourse" class="primary">+ Add course</button>
-      </div>
-      <div class="panel-buttons">
-        <button id="editCourse">Edit</button>
-        <button id="deleteCourse" class="danger">Delete</button>
+        <button id="editCourse">Edit course</button>
       </div>
     </div>
   </details>
@@ -914,6 +932,9 @@
     <div class="cf-label">Par per hole</div>
     <div class="par-grid" id="courseFormPars"></div>
     <div class="cf-par-total" id="courseFormParTotal">Par 72</div>
+    <div class="cf-delete-row" id="courseFormDeleteRow" hidden>
+      <button id="courseFormDelete" class="cf-delete-btn">Delete course</button>
+    </div>
   </div>
 </div>
 
@@ -1016,6 +1037,27 @@
     currentId = courses[0].id;
     saveCourses();
   }
+
+  // Rebuild any courses that exist in saved history but are missing from the picker
+  // (e.g. they were deleted, or a backup was imported that contained orphan history).
+  (function rehydrateCoursesFromHistory() {
+    let history;
+    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return; }
+    if (!Array.isArray(history) || history.length === 0) return;
+    const have = new Set(courses.map(c => c.id));
+    const restored = new Map();
+    for (const r of history) {
+      if (!r || !r.courseId || have.has(r.courseId) || restored.has(r.courseId)) continue;
+      if (!r.courseName || !Array.isArray(r.pars) || r.pars.length === 0) continue;
+      const holes = r.holes || r.pars.length;
+      const pars = r.pars.slice(0, holes);
+      while (pars.length < holes) pars.push(4);
+      restored.set(r.courseId, { id: r.courseId, name: r.courseName, holes, pars });
+    }
+    if (restored.size === 0) return;
+    for (const c of restored.values()) courses.push(c);
+    saveCourses();
+  })();
 
   function currentCourse() {
     return courses.find(c => c.id === currentId) || courses[0];
@@ -1627,22 +1669,8 @@
     render();
   });
 
-  // --- Add / delete course ---
+  // --- Add course ---
   document.getElementById('newCourse').addEventListener('click', () => openCourseForm('add'));
-
-  document.getElementById('deleteCourse').addEventListener('click', async () => {
-    if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
-    const c = currentCourse();
-    const ok = await confirmDialog(`Delete course "${c.name}"?`, { okText: 'Delete', destructive: true });
-    if (!ok) return;
-    courses = courses.filter(x => x.id !== currentId);
-    currentId = courses[0].id;
-    saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
-    render();
-  });
 
   // --- Course form page ---
   const courseFormView     = document.getElementById('courseFormView');
@@ -1652,6 +1680,7 @@
   const courseFormHoles    = document.getElementById('courseFormHoles');
   const courseFormPars     = document.getElementById('courseFormPars');
   const courseFormParTotal = document.getElementById('courseFormParTotal');
+  const courseFormDeleteRow = document.getElementById('courseFormDeleteRow');
 
   let courseFormMode = null;
   let courseFormEditId = null;
@@ -1698,6 +1727,7 @@
     courseFormTitle.textContent = mode === 'edit' ? 'Edit course' : 'New course';
     courseFormHint.textContent = '';
     courseFormName.value = courseFormDraft.name;
+    courseFormDeleteRow.hidden = mode !== 'edit';
     renderCourseForm();
     courseFormView.hidden = false;
     if (mode === 'add') courseFormName.focus();
@@ -1792,6 +1822,26 @@
   document.getElementById('courseFormSave').addEventListener('click', saveCourseForm);
   document.getElementById('courseFormCancel').addEventListener('click', () => closeCourseForm(false));
   document.getElementById('editCourse').addEventListener('click', () => openCourseForm('edit', currentId));
+
+  document.getElementById('courseFormDelete').addEventListener('click', async () => {
+    if (courseFormMode !== 'edit' || !courseFormEditId) return;
+    if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
+    const c = courses.find(x => x.id === courseFormEditId);
+    if (!c) { closeCourseForm(true); return; }
+    const ok = await confirmDialog(`Delete course "${c.name}"? Saved rounds for this course will stay in History.`, { okText: 'Delete', destructive: true });
+    if (!ok) return;
+    const wasCurrent = c.id === currentId;
+    courses = courses.filter(x => x.id !== c.id);
+    if (wasCurrent) currentId = courses[0].id;
+    saveCourses();
+    if (wasCurrent) {
+      round = newRound(currentId);
+      saveRound();
+      markRoundDirty();
+    }
+    closeCourseForm(true);
+    render();
+  });
 
   // --- Reset round ---
   document.getElementById('reset').addEventListener('click', async () => {
