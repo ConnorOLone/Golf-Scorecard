@@ -786,6 +786,24 @@
     color: #6b6b70;
     margin-top: 16px;
   }
+  .cf-delete-row {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+  }
+  .cf-delete-btn {
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    border: 0.5px solid rgba(210, 63, 63, 0.4);
+    color: #d23f3f;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .cf-delete-btn:active { background: rgba(210, 63, 63, 0.08); }
 
   .sticky-stack {
     position: sticky;
@@ -997,6 +1015,9 @@
     .running.over  { color: #ff9080; }
     .settings-view { background: #000; }
     .settings-section { background: #1c1c1e; border-color: rgba(255, 255, 255, 0.08); }
+    .cf-delete-row { border-top-color: rgba(255,255,255,0.08); }
+    .cf-delete-btn { border-color: rgba(255, 144, 128, 0.5); color: #ff9080; }
+    .cf-delete-btn:active { background: rgba(255, 144, 128, 0.12); }
   }
 </style>
 </head>
@@ -1060,6 +1081,9 @@
     <div class="cf-label">Par per hole</div>
     <div class="par-grid" id="courseFormPars"></div>
     <div class="cf-par-total" id="courseFormParTotal">Par 72</div>
+    <div class="cf-delete-row" id="courseFormDeleteRow" hidden>
+      <button id="courseFormDelete" class="cf-delete-btn">Delete course</button>
+    </div>
   </div>
 </div>
 
@@ -1078,10 +1102,7 @@
       </div>
       <div class="panel-buttons">
         <button id="newCourse" class="primary">+ Add course</button>
-      </div>
-      <div class="panel-buttons">
-        <button id="editCourse">Edit</button>
-        <button id="deleteCourse" class="danger">Delete</button>
+        <button id="editCourse">Edit course</button>
       </div>
     </div>
 
@@ -1147,6 +1168,8 @@
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
+  const normCourseName = (s) => (typeof s === 'string' ? s : '').trim().toLowerCase().replace(/\s+/g, ' ');
+
   function defaultPars(holes) {
     return (holes === 9 ? DEFAULT_PARS_9 : DEFAULT_PARS_18).slice();
   }
@@ -1196,8 +1219,113 @@
     saveCourses();
   }
 
+  // Rebuild any courses that exist in saved history but are missing from the picker
+  // (e.g. they were deleted, or a backup was imported that contained orphan history).
+  (function rehydrateCoursesFromHistory() {
+    let history;
+    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return; }
+    if (!Array.isArray(history) || history.length === 0) return;
+    const have = new Set(courses.map(c => c.id));
+    const restored = new Map();
+    for (const r of history) {
+      if (!r || !r.courseId || have.has(r.courseId) || restored.has(r.courseId)) continue;
+      if (!r.courseName || !Array.isArray(r.pars) || r.pars.length === 0) continue;
+      const holes = r.holes || r.pars.length;
+      const pars = r.pars.slice(0, holes);
+      while (pars.length < holes) pars.push(4);
+      restored.set(r.courseId, { id: r.courseId, name: r.courseName, holes, pars });
+    }
+    if (restored.size === 0) return;
+    for (const c of restored.values()) courses.push(c);
+    saveCourses();
+  })();
+
+  // Collapse duplicate courses (same normalized name + holes) into a single canonical
+  // courseId, rewriting golf_history_v1 so old rounds attach to the survivor. Handles the
+  // case where a course was deleted and re-added under a fresh uid before this migration.
+  (function mergeDuplicateCourses() {
+    if (courses.length < 2) return;
+    let history;
+    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { history = []; }
+    if (!Array.isArray(history)) history = [];
+
+    const counts = new Map();
+    for (const r of history) {
+      if (r && r.courseId) counts.set(r.courseId, (counts.get(r.courseId) || 0) + 1);
+    }
+
+    const groups = new Map();
+    for (const c of courses) {
+      const key = normCourseName(c.name) + '·' + c.holes;
+      if (!key.startsWith('·')) {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(c);
+      }
+    }
+
+    const remap = new Map();
+    for (const group of groups.values()) {
+      if (group.length < 2) continue;
+      let canonical = group[0];
+      let canonicalCount = counts.get(canonical.id) || 0;
+      for (let i = 1; i < group.length; i++) {
+        const c = group[i];
+        const cCount = counts.get(c.id) || 0;
+        const wins = cCount > canonicalCount
+          || (cCount === canonicalCount && c.id === currentId)
+          || (cCount === canonicalCount && canonical.id !== currentId && c.id < canonical.id);
+        if (wins) { canonical = c; canonicalCount = cCount; }
+      }
+      for (const c of group) {
+        if (c.id !== canonical.id) remap.set(c.id, canonical.id);
+      }
+    }
+
+    if (remap.size === 0) return;
+
+    let historyChanged = false;
+    for (const r of history) {
+      if (r && r.courseId && remap.has(r.courseId)) {
+        r.courseId = remap.get(r.courseId);
+        historyChanged = true;
+      }
+    }
+    if (historyChanged) {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch(e) {}
+    }
+
+    if (remap.has(currentId)) currentId = remap.get(currentId);
+    courses = courses.filter(c => !remap.has(c.id));
+    saveCourses();
+
+    try {
+      const savedRound = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');
+      if (savedRound && remap.has(savedRound.courseId)) {
+        savedRound.courseId = remap.get(savedRound.courseId);
+        localStorage.setItem(ROUND_KEY, JSON.stringify(savedRound));
+      }
+    } catch(e) {}
+  })();
+
   function currentCourse() {
     return courses.find(c => c.id === currentId) || courses[0];
+  }
+
+  // If history holds rounds for a course matching name + holes whose courseId is
+  // no longer in courses[], return that id so re-adding the course re-adopts its rounds.
+  function findOrphanCourseId(name, holes) {
+    let history;
+    try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return null; }
+    if (!Array.isArray(history)) return null;
+    const haveIds = new Set(courses.map(x => x.id));
+    const target = normCourseName(name);
+    if (!target) return null;
+    for (const r of history) {
+      if (!r || !r.courseId || haveIds.has(r.courseId)) continue;
+      const rHoles = r.holes || (Array.isArray(r.pars) ? r.pars.length : 0);
+      if (rHoles === holes && normCourseName(r.courseName) === target) return r.courseId;
+    }
+    return null;
   }
 
   // --- Initialise round ---
@@ -1872,25 +2000,10 @@
     render();
   });
 
-  // --- Add / delete course ---
+  // --- Add course ---
   document.getElementById('newCourse').addEventListener('click', () => {
     closeSettings();
     openCourseForm('add');
-  });
-
-  document.getElementById('deleteCourse').addEventListener('click', async () => {
-    if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
-    const c = currentCourse();
-    const ok = await confirmDialog(`Delete course "${c.name}"?`, { okText: 'Delete', destructive: true });
-    if (!ok) return;
-    courses = courses.filter(x => x.id !== currentId);
-    currentId = courses[0].id;
-    saveCourses();
-    round = newRound(currentId);
-    saveRound();
-    markRoundDirty();
-    closeSettings();
-    render();
   });
 
   // --- Course form page ---
@@ -1901,6 +2014,7 @@
   const courseFormHoles    = document.getElementById('courseFormHoles');
   const courseFormPars     = document.getElementById('courseFormPars');
   const courseFormParTotal = document.getElementById('courseFormParTotal');
+  const courseFormDeleteRow = document.getElementById('courseFormDeleteRow');
 
   let courseFormMode = null;
   let courseFormEditId = null;
@@ -1947,6 +2061,7 @@
     courseFormTitle.textContent = mode === 'edit' ? 'Edit course' : 'New course';
     courseFormHint.textContent = '';
     courseFormName.value = courseFormDraft.name;
+    courseFormDeleteRow.hidden = mode !== 'edit';
     renderCourseForm();
     courseFormView.hidden = false;
     if (mode === 'add') courseFormName.focus();
@@ -1977,7 +2092,9 @@
         const ok = await confirmDialog('Adding a course will clear the current round. Continue?', { okText: 'Add course', destructive: true });
         if (!ok) return;
       }
-      const c = { id: uid(), name, holes: courseFormDraft.holes, pars: courseFormDraft.pars.slice() };
+      const newHoles = courseFormDraft.holes;
+      const reuseId = findOrphanCourseId(name, newHoles);
+      const c = { id: reuseId || uid(), name, holes: newHoles, pars: courseFormDraft.pars.slice() };
       courses.push(c);
       currentId = c.id;
       saveCourses();
@@ -2062,6 +2179,26 @@
     const i = parseInt(col.dataset.hole, 10);
     const row = holesEl.querySelector(`.hole[data-hole-row="${i}"]`);
     if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  document.getElementById('courseFormDelete').addEventListener('click', async () => {
+    if (courseFormMode !== 'edit' || !courseFormEditId) return;
+    if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
+    const c = courses.find(x => x.id === courseFormEditId);
+    if (!c) { closeCourseForm(true); return; }
+    const ok = await confirmDialog(`Delete course "${c.name}"? Saved rounds for this course will stay in History.`, { okText: 'Delete', destructive: true });
+    if (!ok) return;
+    const wasCurrent = c.id === currentId;
+    courses = courses.filter(x => x.id !== c.id);
+    if (wasCurrent) currentId = courses[0].id;
+    saveCourses();
+    if (wasCurrent) {
+      round = newRound(currentId);
+      saveRound();
+      markRoundDirty();
+    }
+    closeCourseForm(true);
+    render();
   });
 
   // --- Reset round ---
