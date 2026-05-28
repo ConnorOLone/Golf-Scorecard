@@ -44,6 +44,10 @@
     font-weight: 600;
     margin: 0;
     letter-spacing: -0.4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
   .header-meta {
     font-size: 13px;
@@ -82,12 +86,14 @@
     height: 36px;
     border-radius: 50%;
     font-size: 20px;
+    line-height: 1;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     margin: 0 8px;
+    vertical-align: middle;
   }
   .new-round-btn:hover,
   .new-round-btn:active {
@@ -781,9 +787,162 @@
     margin-top: 16px;
   }
 
+  .sticky-stack {
+    position: sticky;
+    top: env(safe-area-inset-top);
+    z-index: 20;
+    background: #f5f5f7;
+    padding: 12px 0 12px;
+    margin: -12px 0 12px;
+  }
+  .sticky-stack header { margin-bottom: 12px; }
+  .sticky-stack .summary { margin-bottom: 0; }
+
+  .menu-btn {
+    background: transparent;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    color: #0f6e56;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .menu-btn:hover, .menu-btn:active {
+    border-color: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .sparkline {
+    display: grid;
+    gap: 2px;
+    height: 30px;
+    margin-top: 14px;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sparkline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-0.5px);
+    pointer-events: none;
+  }
+  .spark-col {
+    position: relative;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.1s;
+  }
+  .spark-col:active { background: rgba(255, 255, 255, 0.12); }
+  .spark-bar {
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    border-radius: 2px;
+    min-height: 2px;
+  }
+  .spark-bar.under { background: #a8e6cf; }
+  .spark-bar.par   { background: rgba(255, 255, 255, 0.7); }
+  .spark-bar.over  { background: #ffb4a8; }
+  .spark-bar.empty {
+    background: rgba(255, 255, 255, 0.18);
+    top: calc(50% - 1px);
+    height: 2px;
+    left: 30%;
+    right: 30%;
+  }
+
+  .label-cell {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .running {
+    font-size: 10px;
+    font-weight: 500;
+    color: #8e8e93;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+    min-height: 12px;
+  }
+  .running.under { color: #0f6e56; }
+  .running.over  { color: #d23f3f; }
+
+  .settings-view {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: #f5f5f7;
+    display: flex;
+    flex-direction: column;
+  }
+  .settings-view[hidden] { display: none; }
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #0f6e56;
+    color: white;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  }
+  .settings-header button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 2px;
+    min-width: 56px;
+    text-align: left;
+  }
+  .settings-header .settings-title { font-size: 16px; font-weight: 600; }
+  .settings-header .settings-spacer { width: 56px; }
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 16px calc(env(safe-area-inset-bottom) + 24px);
+  }
+  .settings-section {
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+  }
+  .settings-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8e8e93;
+    margin-bottom: 12px;
+  }
+  .settings-section .panel-row:last-child,
+  .settings-section .panel-buttons:last-child { margin-bottom: 0; }
+
   @media (prefers-color-scheme: dark) {
     html, body { background: #000; color: #f5f5f7; }
-    .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+    .hole, details.panel, .btn, .panel-buttons button { background: #1c1c1e; color: #f5f5f7; border-color: rgba(255,255,255,0.08); }
     .stepper button { background: #2c2c2e; color: #f5f5f7; }
     .stepper button:active { background: #3a3a3c; }
     .par-cell select, .panel-row select, .panel-row input[type="text"] { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
@@ -827,60 +986,47 @@
     .cf-name { background: #2c2c2e; color: #f5f5f7; border-color: rgba(255,255,255,0.12); }
     .cf-par-total { color: #8e8e93; }
     .cf-hint { color: #ff9080; }
+    .sticky-stack { background: #000; }
+    .menu-btn { border-color: rgba(255, 255, 255, 0.5); color: white; }
+    .menu-btn:hover, .menu-btn:active {
+      border-color: white;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .running { color: #8e8e93; }
+    .running.under { color: #6dcfa0; }
+    .running.over  { color: #ff9080; }
+    .settings-view { background: #000; }
+    .settings-section { background: #1c1c1e; border-color: rgba(255, 255, 255, 0.08); }
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>Scorecard</h1>
-    <div class="header-meta">
-      <div class="course-name" id="courseName">—</div>
-      <button class="new-round-btn" id="newRoundBtn" aria-label="Start new round">+</button>
-      <button class="date-btn" id="dateBtn" aria-label="Change round date"></button>
-      <input type="date" id="dateInput" aria-hidden="true" tabindex="-1">
-    </div>
-  </header>
+  <div class="sticky-stack">
+    <header>
+      <h1 id="courseName">—</h1>
+      <div class="header-meta">
+        <button class="new-round-btn" id="newRoundBtn" aria-label="Start new round">+</button>
+        <button class="date-btn" id="dateBtn" aria-label="Change round date"></button>
+        <input type="date" id="dateInput" aria-hidden="true" tabindex="-1">
+        <button class="menu-btn" id="settingsBtn" aria-label="Open settings">⋮</button>
+      </div>
+    </header>
 
-  <div class="summary">
-    <div class="summary-hero">
-      <div class="summary-hero-value" id="toPar">E</div>
-      <div class="summary-hero-label">to par</div>
+    <div class="summary">
+      <div class="summary-hero">
+        <div class="summary-hero-value" id="toPar">E</div>
+        <div class="summary-hero-label">to par</div>
+      </div>
+      <div class="summary-sub">
+        <span>Total <b id="total">0</b></span>
+        <span>Thru <b id="thru">0</b></span>
+      </div>
+      <div class="splits" id="splits" hidden></div>
+      <div class="sparkline" id="sparkline" aria-label="Per-hole trajectory"></div>
     </div>
-    <div class="summary-sub">
-      <span>Total <b id="total">0</b></span>
-      <span>Thru <b id="thru">0</b></span>
-    </div>
-    <div class="splits" id="splits" hidden></div>
   </div>
 
-  <details class="panel" id="coursePanel">
-    <summary><span>Course</span></summary>
-    <div class="panel-body">
-      <div class="panel-row">
-        <label>Course</label>
-        <select id="courseSelect"></select>
-      </div>
-      <div class="panel-buttons">
-        <button id="newCourse" class="primary">+ Add course</button>
-      </div>
-      <div class="panel-buttons">
-        <button id="editCourse">Edit</button>
-        <button id="deleteCourse" class="danger">Delete</button>
-      </div>
-    </div>
-  </details>
-
-  <details class="panel" id="dataPanel">
-    <summary><span>Backup</span></summary>
-    <div class="panel-body">
-      <div class="storage-status" id="storageStatus">Checking storage…</div>
-      <div class="panel-buttons">
-        <button id="exportBackup">Export</button>
-        <button id="importBackup">Import</button>
-      </div>
-    </div>
-  </details>
   <input type="file" id="importFile" accept="application/json,.json" hidden>
 
   <div class="holes" id="holes"></div>
@@ -914,6 +1060,39 @@
     <div class="cf-label">Par per hole</div>
     <div class="par-grid" id="courseFormPars"></div>
     <div class="cf-par-total" id="courseFormParTotal">Par 72</div>
+  </div>
+</div>
+
+<div class="settings-view" id="settingsView" hidden>
+  <div class="settings-header">
+    <button id="settingsClose">Close</button>
+    <span class="settings-title">Settings</span>
+    <span class="settings-spacer"></span>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section">
+      <div class="settings-section-title">Course</div>
+      <div class="panel-row">
+        <label>Course</label>
+        <select id="courseSelect"></select>
+      </div>
+      <div class="panel-buttons">
+        <button id="newCourse" class="primary">+ Add course</button>
+      </div>
+      <div class="panel-buttons">
+        <button id="editCourse">Edit</button>
+        <button id="deleteCourse" class="danger">Delete</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Backup</div>
+      <div class="storage-status" id="storageStatus">Checking storage…</div>
+      <div class="panel-buttons">
+        <button id="exportBackup">Export</button>
+        <button id="importBackup">Import</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1051,6 +1230,7 @@
   const dateBtn       = document.getElementById('dateBtn');
   const dateInput     = document.getElementById('dateInput');
   const splitsEl      = document.getElementById('splits');
+  const sparklineEl   = document.getElementById('sparkline');
 
   // --- Modal dialogs (replace native confirm/prompt) ---
   const modalEl       = document.getElementById('modal');
@@ -1145,10 +1325,28 @@
     return { text: '+' + diff, cls: 'over' };
   }
 
+  function runningDiffThrough(scores, pars, throughIdx) {
+    if (scores[throughIdx] == null) return null;
+    let s = 0, p = 0;
+    for (let i = 0; i <= throughIdx; i++) {
+      if (scores[i] != null) {
+        s += scores[i];
+        p += pars[i];
+      }
+    }
+    return s - p;
+  }
+
+  function runningDisplay(diff) {
+    if (diff == null) return { text: '', cls: '' };
+    if (diff === 0)   return { text: 'E', cls: 'par' };
+    if (diff < 0)     return { text: String(diff), cls: 'under' };
+    return { text: '+' + diff, cls: 'over' };
+  }
+
   function renderHeader() {
     const c = currentCourse();
-    const parSum = c.pars.reduce((a, b) => a + b, 0);
-    courseNameEl.textContent = `${c.name} · Par ${parSum}`;
+    courseNameEl.textContent = c.name;
     const d = new Date(round.date);
     dateBtn.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
@@ -1323,6 +1521,7 @@
       const par = c.pars[i];
       const score = round.scores[i];
       const lbl = labelFor(score, par);
+      const run = runningDisplay(runningDiffThrough(round.scores, c.pars, i));
 
       const row = document.createElement('div');
       row.className = 'hole' + (i === nextIdx ? ' next' : '');
@@ -1337,10 +1536,53 @@
           <div class="score ${score == null ? 'empty' : ''}" data-score-hole="${i}" role="button" aria-label="Set score for hole ${i + 1}">${score == null ? '–' : score}</div>
           <button data-hole="${i}" data-action="inc" aria-label="Increase score">+</button>
         </div>
-        <div class="label ${lbl.cls}">${lbl.text}</div>
+        <div class="label-cell">
+          <div class="label ${lbl.cls}">${lbl.text}</div>
+          <div class="running ${run.cls}">${run.text}</div>
+        </div>
       `;
       holesEl.appendChild(row);
     }
+  }
+
+  function refreshRunningAll() {
+    const c = currentCourse();
+    for (let i = 0; i < c.holes; i++) {
+      const row = holesEl.querySelector(`.hole[data-hole-row="${i}"]`);
+      if (!row) continue;
+      const run = runningDisplay(runningDiffThrough(round.scores, c.pars, i));
+      const runEl = row.querySelector('.running');
+      if (runEl) {
+        runEl.className = 'running ' + run.cls;
+        runEl.textContent = run.text;
+      }
+    }
+  }
+
+  function renderSparkline() {
+    const c = currentCourse();
+    sparklineEl.style.gridTemplateColumns = `repeat(${c.holes}, 1fr)`;
+    const max = 4;
+    const cells = [];
+    for (let i = 0; i < c.holes; i++) {
+      const s = round.scores[i];
+      if (s == null) {
+        cells.push(`<div class="spark-col" data-hole="${i}"><div class="spark-bar empty"></div></div>`);
+        continue;
+      }
+      const diff = s - c.pars[i];
+      if (diff === 0) {
+        cells.push(`<div class="spark-col" data-hole="${i}"><div class="spark-bar par" style="top:calc(50% - 3px); height:6px;"></div></div>`);
+        continue;
+      }
+      const mag = Math.min(Math.abs(diff), max);
+      const halfPct = (mag / max) * 46;
+      const cls = diff < 0 ? 'under' : 'over';
+      const top = diff < 0 ? '50%' : `calc(50% - ${halfPct}%)`;
+      const height = `${halfPct}%`;
+      cells.push(`<div class="spark-col" data-hole="${i}"><div class="spark-bar ${cls}" style="top:${top}; height:${height};"></div></div>`);
+    }
+    sparklineEl.innerHTML = cells.join('');
   }
 
   function updateHoleRow(i, opts = {}) {
@@ -1440,6 +1682,7 @@
     renderHeader();
     renderCoursePanel();
     renderHoles();
+    renderSparkline();
     updateSummary();
   }
 
@@ -1470,6 +1713,8 @@
   function onScoreChanged(i) {
     saveRound();
     updateHoleRow(i, { bump: true });
+    refreshRunningAll();
+    renderSparkline();
     updateSummary();
     markRoundDirty();
     scrollToNextHole();
@@ -1628,7 +1873,10 @@
   });
 
   // --- Add / delete course ---
-  document.getElementById('newCourse').addEventListener('click', () => openCourseForm('add'));
+  document.getElementById('newCourse').addEventListener('click', () => {
+    closeSettings();
+    openCourseForm('add');
+  });
 
   document.getElementById('deleteCourse').addEventListener('click', async () => {
     if (courses.length === 1) { await alertDialog('You need at least one course.'); return; }
@@ -1641,6 +1889,7 @@
     round = newRound(currentId);
     saveRound();
     markRoundDirty();
+    closeSettings();
     render();
   });
 
@@ -1791,7 +2040,29 @@
 
   document.getElementById('courseFormSave').addEventListener('click', saveCourseForm);
   document.getElementById('courseFormCancel').addEventListener('click', () => closeCourseForm(false));
-  document.getElementById('editCourse').addEventListener('click', () => openCourseForm('edit', currentId));
+  document.getElementById('editCourse').addEventListener('click', () => {
+    closeSettings();
+    openCourseForm('edit', currentId);
+  });
+
+  // --- Settings sheet ---
+  const settingsView = document.getElementById('settingsView');
+  function openSettings()  { settingsView.hidden = false; }
+  function closeSettings() { settingsView.hidden = true; }
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('settingsClose').addEventListener('click', closeSettings);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !settingsView.hidden) closeSettings();
+  });
+
+  // --- Sparkline tap → scroll to that hole ---
+  sparklineEl.addEventListener('click', (e) => {
+    const col = e.target.closest('.spark-col');
+    if (!col) return;
+    const i = parseInt(col.dataset.hole, 10);
+    const row = holesEl.querySelector(`.hole[data-hole-row="${i}"]`);
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 
   // --- Reset round ---
   document.getElementById('reset').addEventListener('click', async () => {
