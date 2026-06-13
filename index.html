@@ -1566,12 +1566,14 @@
     if (action === 'new') {
       round = newRound(currentId);
       saveRound();
+      markRoundDirty();
       render();
     } else if (action === 'switch') {
       currentId = courseId;
       saveCourses();
       round = newRound(currentId);
       saveRound();
+      markRoundDirty();
       render();
     }
   });
@@ -2228,6 +2230,7 @@
   };
 
   document.getElementById('save').addEventListener('click', async () => {
+    if (roundSaved) return;
     const c = currentCourse();
     const played = round.scores.filter(s => s != null);
     if (played.length === 0) { await alertDialog('No scores to save yet.'); return; }
@@ -2266,6 +2269,7 @@
       // Round already saved, start new immediately
       round = newRound(currentId);
       saveRound();
+      markRoundDirty();
       render();
     } else {
       // Round has unsaved changes, show confirmation dialog
