@@ -1348,7 +1348,7 @@
 
   function newRound(courseId) {
     const c = courses.find(x => x.id === courseId) || courses[0];
-    return { courseId: c.id, scores: Array(c.holes).fill(null), date: Date.now() };
+    return { courseId: c.id, scores: Array(c.holes).fill(null), date: null };
   }
 
   // --- DOM refs ---
@@ -1475,7 +1475,7 @@
   function renderHeader() {
     const c = currentCourse();
     courseNameEl.textContent = c.name;
-    const d = new Date(round.date);
+    const d = new Date(round.date ?? Date.now());
     dateBtn.textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
@@ -1498,7 +1498,7 @@
     const discardBtn = document.getElementById('confirmRoundDiscardBtn');
     const modal = document.getElementById('confirmRoundModal');
 
-    const roundDate = new Date(round.date).toLocaleDateString(undefined, {
+    const roundDate = new Date(round.date ?? Date.now()).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric'
     });
@@ -1542,7 +1542,7 @@
     const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const entry = {
       id: uid(),
-      date: round.date,
+      date: round.date ?? Date.now(),
       courseId: c.id,
       courseName: c.name,
       holes: c.holes,
@@ -1607,7 +1607,7 @@
   });
 
   dateBtn.addEventListener('click', () => {
-    dateInput.value = isoLocal(round.date);
+    dateInput.value = isoLocal(round.date ?? Date.now());
     if (typeof dateInput.showPicker === 'function') {
       try { dateInput.showPicker(); return; } catch(e) {}
     }
@@ -1618,7 +1618,7 @@
   dateInput.addEventListener('change', () => {
     if (!dateInput.value) return;
     const [y, m, d] = dateInput.value.split('-').map(Number);
-    const dt = new Date(round.date);
+    const dt = new Date(round.date ?? Date.now());
     dt.setFullYear(y, m - 1, d);
     round.date = dt.getTime();
     saveRound();
@@ -2238,7 +2238,7 @@
     const parTotal = round.scores.reduce((acc, s, i) => s == null ? acc : acc + c.pars[i], 0);
     const entry = {
       id: uid(),
-      date: round.date,
+      date: round.date ?? Date.now(),
       courseId: c.id,
       courseName: c.name,
       holes: c.holes,
