@@ -542,6 +542,21 @@
   .stats-course .meta { font-size: 11px; color: #8e8e93; }
   .stats-course .best { font-size: 12px; font-weight: 600; }
 
+  .handicap-block { text-align: center; }
+  .handicap-value {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    color: #0f6e56;
+    line-height: 1;
+  }
+  .handicap-value.muted { color: #c7c7cc; font-weight: 600; }
+  .handicap-note {
+    font-size: 11px;
+    color: #8e8e93;
+    margin-top: 6px;
+  }
+
   /* History expand */
   .history-row { cursor: pointer; }
   .history-detail {
@@ -978,6 +993,8 @@
     .modal-actions button:active { background: #3a3a3c; }
     .storage-status { color: #8e8e93; }
     .stats-block { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+    .handicap-value { color: #6dcfa0; }
+    .handicap-value.muted { color: #48484a; }
     .stats-dist .pill { background: #2c2c2e; }
     .stats-course { border-top-color: rgba(255,255,255,0.06); }
     .hole-grid .cell { background: #2c2c2e; }
@@ -2340,6 +2357,66 @@
       </div>`;
   }
 
+  // Handicap Index, World Handicap System style. The app stores par per course but no
+  // course/slope rating, so each round's score differential is its 18-hole-equivalent
+  // to-par (slope-neutral). Only fully-played rounds count; 9-hole rounds are doubled.
+  function computeHandicap(history) {
+    const eligible = [];
+    for (const r of history) {
+      if (!Array.isArray(r.scores) || !Array.isArray(r.pars)) continue;
+      const holes = r.holes || r.pars.length;
+      const played = r.scores.reduce((n, s) => n + (s != null ? 1 : 0), 0);
+      if (played !== holes || holes === 0) continue;
+      const toPar = (typeof r.toPar === 'number' && Number.isFinite(r.toPar))
+        ? r.toPar
+        : r.scores.reduce((a, s) => a + s, 0) - r.pars.reduce((a, p) => a + p, 0);
+      const differential = holes === 9 ? toPar * 2 : toPar;
+      eligible.push({ differential, date: r.date || 0 });
+    }
+    eligible.sort((a, b) => b.date - a.date);
+    const recent = eligible.slice(0, 20);
+    const n = recent.length;
+    if (n < 3) return { index: null, count: n, needed: 3 - n };
+
+    // [lowest differentials to average, adjustment] keyed by round count, per WHS.
+    const RULES = {
+      3:  [1, -2], 4:  [1, -1], 5:  [1, 0],
+      6:  [2, -1], 7:  [2, 0],  8:  [2, 0],
+      9:  [3, 0],  10: [3, 0],  11: [3, 0],
+      12: [4, 0],  13: [4, 0],  14: [4, 0],
+      15: [5, 0],  16: [5, 0],
+      17: [6, 0],  18: [6, 0],
+      19: [7, 0],  20: [8, 0]
+    };
+    const [used, adj] = RULES[n];
+    const lowest = recent.map(r => r.differential).sort((a, b) => a - b).slice(0, used);
+    const avg = lowest.reduce((a, b) => a + b, 0) / lowest.length;
+    const index = Math.min(54, avg + adj);
+    return { index, used, count: n };
+  }
+
+  function fmtHandicap(index) {
+    return index < 0 ? '+' + Math.abs(index).toFixed(1) : index.toFixed(1);
+  }
+
+  function handicapHTML(h) {
+    const hc = computeHandicap(h);
+    let valueHTML, note;
+    if (hc.index == null) {
+      valueHTML = '<div class="handicap-value muted">—</div>';
+      note = `${hc.needed} more complete round${hc.needed === 1 ? '' : 's'} needed (3 minimum)`;
+    } else {
+      valueHTML = `<div class="handicap-value">${fmtHandicap(hc.index)}</div>`;
+      note = `Best ${hc.used} of last ${hc.count} round${hc.count === 1 ? '' : 's'}`;
+    }
+    return `
+      <div class="stats-block handicap-block">
+        <div class="stats-title">Handicap Index</div>
+        ${valueHTML}
+        <div class="handicap-note">${note}</div>
+      </div>`;
+  }
+
   function computeStats(h) {
     const dist = { eagle: 0, birdie: 0, par: 0, bogey: 0, double: 0, triple: 0 };
     const byCourse = new Map();
@@ -2452,7 +2529,7 @@
         </div>
       </div>` : '';
 
-    return overall + dist + courses;
+    return handicapHTML(h) + overall + dist + courses;
   }
 
   function renderHistory() {
